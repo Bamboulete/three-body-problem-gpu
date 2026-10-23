@@ -4,12 +4,13 @@
  * 3D-Renderer, Mission-Control-HUD und das Live-Monte-Carlo-Labor.
  */
 
-import { PhysicsEngine } from './physics.js';
-import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js';
-import { SceneRenderer } from './renderer.js';
+import { PhysicsEngine } from './physics.js?v=2';
+import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=2';
+import { SceneRenderer } from './renderer.js?v=2';
 
 class TrinityApp {
   constructor() {
+    window.app = this;
     this.canvasContainer = document.getElementById('canvas-container');
     this.physics = new PhysicsEngine();
     this.renderer = new SceneRenderer(this.canvasContainer);
@@ -360,6 +361,7 @@ class TrinityApp {
   setPhysicsMode(mode) {
     this.currentMode = mode;
     this.physics.setMode(mode);
+    this.renderer.setMode(mode);
 
     if (mode === 'atomic') {
       this.btnModeAtomic.classList.add('active');

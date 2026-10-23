@@ -169,6 +169,7 @@ export class SceneRenderer {
     this.showTrails = true;
     this.showTriangleMesh = true;
     this.showVectors = true;
+    this.mode = 'cosmic'; // 'cosmic' oder 'atomic'
 
     this.trailHistoryLength = 160;
     this.trailsData = [[], [], []];
@@ -431,6 +432,72 @@ export class SceneRenderer {
     }
   }
 
+  // Modus umschalten (Kosmos vs. Quanten-Helium-Atom)
+  setMode(mode) {
+    this.mode = mode;
+    this.updateBodyVisualsForMode();
+  }
+
+  updateBodyVisualsForMode() {
+    if (!this.bodyObjects || this.bodyObjects.length < 3) return;
+
+    if (this.mode === 'atomic') {
+      // ⚛️ QUANTEN-HELIUM-ATOM:
+      // Body 0: Helium-Kern He²⁺ (Alpha-Teilchen, Gold/Rot leuchtend, kompakt, hochenergetisch)
+      // Body 1 & 2: Elektronen e₁ & e₂ (subatomare Quantenpunkte, Cyan & Magenta, KEINE Sonnen-Protuberanzen!)
+      const nuc = this.bodyObjects[0];
+      nuc.flareRing.visible = false;
+      nuc.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
+      nuc.surfaceMat.uniforms.uColorMid.value.setHex(0xffaa00);
+      nuc.surfaceMat.uniforms.uColorEdge.value.setHex(0xd00000);
+      nuc.surfaceMat.uniforms.uSpeed.value = 4.0;
+      nuc.coronaMat.uniforms.uColorCorona.value.setHex(0xff8800);
+      nuc.light.color.setHex(0xffaa00);
+      nuc.light.intensity = 2.4;
+
+      const e1 = this.bodyObjects[1];
+      e1.flareRing.visible = false;
+      e1.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
+      e1.surfaceMat.uniforms.uColorMid.value.setHex(0x00f0ff);
+      e1.surfaceMat.uniforms.uColorEdge.value.setHex(0x0044bb);
+      e1.surfaceMat.uniforms.uSpeed.value = 5.0;
+      e1.coronaMat.uniforms.uColorCorona.value.setHex(0x00d4ff);
+      e1.light.color.setHex(0x00f0ff);
+      e1.light.intensity = 1.6;
+
+      const e2 = this.bodyObjects[2];
+      e2.flareRing.visible = false;
+      e2.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
+      e2.surfaceMat.uniforms.uColorMid.value.setHex(0xff007f);
+      e2.surfaceMat.uniforms.uColorEdge.value.setHex(0x880044);
+      e2.surfaceMat.uniforms.uSpeed.value = 5.0;
+      e2.coronaMat.uniforms.uColorCorona.value.setHex(0xff00aa);
+      e2.light.color.setHex(0xff007f);
+      e2.light.intensity = 1.6;
+
+      // Feines Quanten-Gewebe
+      this.triangleMaterial.opacity = 0.14;
+      this.edgeMaterial.opacity = 0.45;
+    } else {
+      // 🌌 KOSMOS-MODUS:
+      // Vollwertige Sterne mit solarer Konvektion und Protuberanzen-Ringen
+      for (let i = 0; i < 3; i++) {
+        const obj = this.bodyObjects[i];
+        const cfg = obj.cfg;
+        obj.flareRing.visible = true;
+        obj.surfaceMat.uniforms.uColorCore.value.setHex(cfg.coreColor);
+        obj.surfaceMat.uniforms.uColorMid.value.setHex(cfg.midColor);
+        obj.surfaceMat.uniforms.uColorEdge.value.setHex(cfg.edgeColor);
+        obj.surfaceMat.uniforms.uSpeed.value = cfg.speed;
+        obj.coronaMat.uniforms.uColorCorona.value.setHex(cfg.coronaColor);
+        obj.light.color.setHex(cfg.lightColor);
+        obj.light.intensity = 2.8;
+      }
+      this.triangleMaterial.opacity = 0.22;
+      this.edgeMaterial.opacity = 0.75;
+    }
+  }
+
   // Update der 3D-Darstellung pro Animationsframe
   update(physics, frameCount) {
     if (physics.bodies.length < 3) return;
@@ -440,7 +507,7 @@ export class SceneRenderer {
     const pB = bB.pos;
     const pC = bC.pos;
 
-    // 1. Positionen der Sterne aktualisieren & Radien an Massen anpassen
+    // 1. Positionen der Körper aktualisieren & Radien an Massen anpassen
     const stars = [pA, pB, pC];
     const timeSec = performance.now() * 0.001;
 
@@ -449,13 +516,29 @@ export class SceneRenderer {
       const obj = this.bodyObjects[i];
       obj.group.position.set(stars[i].x, stars[i].y, stars[i].z);
 
-      // Radius skaliert mit Kubikwurzel der Masse
-      const scale = Math.cbrt(body.mass);
-      obj.core.scale.setScalar(obj.cfg.baseRadius * scale);
-      obj.corona.scale.setScalar(obj.cfg.coronaRadius * scale);
-      obj.flareRing.scale.setScalar(scale);
+      // Modus-spezifische Skalierung (Atomkern vs. Elektronen vs. Sterne)
+      if (this.mode === 'atomic') {
+        if (i === 0) {
+          // Helium-Kern He²⁺: Dichter Alphakern (Masse ~ 4.0)
+          obj.core.scale.setScalar(0.20);
+          obj.corona.scale.setScalar(0.40);
+          obj.flareRing.visible = false;
+        } else {
+          // Elektronen e₁ und e₂: Winzige Quanten-Sphären (Masse 1.0)
+          obj.core.scale.setScalar(0.09);
+          obj.corona.scale.setScalar(0.20);
+          obj.flareRing.visible = false;
+        }
+      } else {
+        // Kosmos: Sterne skalieren mit Kubikwurzel der Masse
+        const scale = Math.cbrt(body.mass);
+        obj.core.scale.setScalar(obj.cfg.baseRadius * scale);
+        obj.corona.scale.setScalar(obj.cfg.coronaRadius * scale);
+        obj.flareRing.scale.setScalar(scale);
+        obj.flareRing.visible = true;
+      }
 
-      // Shader Zeit updaten für fließendes Plasma und Koronastrahlen!
+      // Shader Zeit updaten für fließendes Plasma / Quantenwellen
       if (obj.surfaceMat && obj.surfaceMat.uniforms.uTime) {
         obj.surfaceMat.uniforms.uTime.value = timeSec;
       }
@@ -463,11 +546,13 @@ export class SceneRenderer {
         obj.coronaMat.uniforms.uTime.value = timeSec;
       }
 
-      // Protuberanzen-Drehung
-      obj.flareRing.rotation.z += 0.007 * (i === 1 ? -1 : 1);
+      // Protuberanzen-Drehung (nur Kosmos)
+      if (this.mode !== 'atomic') {
+        obj.flareRing.rotation.z += 0.007 * (i === 1 ? -1 : 1);
+      }
 
-      // Leichtes Pulsieren des Sonnenlichts
-      obj.light.intensity = 2.6 + Math.sin(timeSec * 2.2 + i * 1.5) * 0.35;
+      // Leichtes Pulsieren
+      obj.light.intensity = (this.mode === 'atomic' ? 1.8 : 2.6) + Math.sin(timeSec * 2.2 + i * 1.5) * 0.35;
     }
 
     // 2. Trinitäts-Dreieck (GS) Spannungs-Gewebe Geometrie updaten

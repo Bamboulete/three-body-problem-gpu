@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <!-- Three.js and OrbitControls via unpkg / CDN -->
   <script type="importmap">
     {
@@ -298,15 +298,50 @@
 
             <!-- Wissenschaftliche Formel -->
             <div class="formula-math-view" id="formula-math-view" style="display: none;">
-              <div class="formula-math">
-                <span class="f-var">T</span><sub>auswurf</sub> = (<span class="f-var">N</span> − 1) · <span class="f-var">T</span><sub>orbit</sub> + <span class="f-var">t</span><sub>Kepler</sub>
-                <br>
-                <span style="font-size: 0.70rem; color: #a0a0c0; display: inline-block; margin-top: 4px;">
-                  mit <span class="f-var">N</span> = 1 + round[ (<span class="f-frac"><span class="f-num">1.002 · (1 + η<sup>0.19</sup>)</span><span class="f-den">ΔΦ<sub>rel</sub> + 0.05</span></span> − 1) · Gate(cos α) ]
-                </span>
-              </div>
-              <div class="formula-subnote">
-                Doppler Gate(cos α) = ½·(1 + tanh(12·cos α)) & T<sub>orbit</sub> = 0.0051·T<sub>scale</sub>
+              <div class="math-card-inner">
+                <div class="math-row-main">
+                  <span class="math-sym-cyan">T<sub>auswurf</sub></span>
+                  <span class="math-op">=</span>
+                  <span class="math-group">(<span class="math-sym-green">N</span> − 1)</span>
+                  <span class="math-op">·</span>
+                  <span class="math-sym-gold">T<sub>orbit</sub></span>
+                  <span class="math-op">+</span>
+                  <span class="math-sym-magenta">t<sub>Kepler</sub></span>
+                </div>
+
+                <div class="math-step-equation">
+                  <span class="math-label-prefix">mit</span>
+                  <span class="math-sym-green">N</span>
+                  <span class="math-op">=</span>
+                  <span class="math-term">1 + round</span>
+                  <span class="math-bracket">[</span>
+                  <span class="math-bracket">(</span>
+                  <div class="math-frac">
+                    <span class="math-num">1.002 · (1 + η<sup>0.19</sup>)</span>
+                    <span class="math-den">ΔΦ<sub>rel</sub> + 0.05</span>
+                  </div>
+                  <span class="math-op">−</span>
+                  <span class="math-num-const">1</span>
+                  <span class="math-bracket">)</span>
+                  <span class="math-op">·</span>
+                  <span class="math-sym-gate">Θ(cos α)</span>
+                  <span class="math-bracket">]</span>
+                </div>
+
+                <div class="math-definitions">
+                  <div class="math-def-row">
+                    <span class="math-def-label">Doppler-Tor:</span>
+                    <span class="math-def-val">Θ(cos α) = ½ · [1 + tanh(12 · cos α)]</span>
+                  </div>
+                  <div class="math-def-row">
+                    <span class="math-def-label">Orbit-Skala:</span>
+                    <span class="math-def-val">T<sub>orbit</sub> = 0.0051 · T<sub>scale</sub></span>
+                  </div>
+                  <div class="math-def-row">
+                    <span class="math-def-label">Kepler-Flug:</span>
+                    <span class="math-def-val">t<sub>Kepler</sub> = 2π √(a³ / G M<sub>tot</sub>)</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -571,6 +606,20 @@
         </div>
 
         <div class="modal-body">
+          <!-- Hardware Limitation Notice (GitHub Pages CPU vs Dedicated CUDA GPU) -->
+          <div class="mc-gpu-notice-card">
+            <div class="mc-gpu-notice-header">
+              <span class="mc-gpu-notice-icon">⚠️</span>
+              <span class="mc-gpu-notice-title">Hardware-Hinweis: Browser-CPU vs. Dedizierte CUDA-GPU</span>
+              <span class="mc-gpu-badge">GitHub Pages (Client-CPU)</span>
+            </div>
+            <p class="mc-gpu-notice-text">
+              Dieses interaktive Web-Labor läuft rein clientseitig in Ihrem Browser auf der CPU (JavaScript). Da Webbrowser auf statischem Webspace (wie GitHub Pages) ohne dedizierten Backend-Server keinen direkten Zugriff auf hardwarenahe Grafiktreiber (NVIDIA CUDA) besitzen, ist die Live-Ensemble-Größe hier auf maximal <strong>10.000 Systeme</strong> begrenzt (1.000 empfohlen für flüssige 60 FPS).
+              <br>
+              Das im wissenschaftlichen Paper vorgestellte <strong>1.000.000.000 (1 Milliarde) Systeme</strong> Ensemble wurde mit unserem nativen <strong>CUDA C++ Kernel</strong> parallel auf dedizierter GPU-Hardware (NVIDIA RTX 4070) berechnet.
+            </p>
+          </div>
+
           <!-- Parameter Bar -->
           <div class="mc-control-bar">
             <div class="mc-control-group">
@@ -653,6 +702,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>
