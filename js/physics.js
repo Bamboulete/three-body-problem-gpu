@@ -47,6 +47,10 @@ export class PhysicsEngine {
     this.cyclesCount = 0;
     this.prevMinDist = 0;
     this.prevDistRate = 0;
+    this.slingshotLocked = false;
+    this.lockedCandidateIdx = -1;
+    this.currentCandidateIdx = -1;
+    this.slingshotTime = 0;
     this.exactEjectionTime = null;
     this.keplerFlightTime = 0;
 
@@ -57,6 +61,9 @@ export class PhysicsEngine {
   setMode(mode) {
     this.mode = mode;
     this.softening = (mode === 'atomic') ? 0.02 : 0.05;
+    this.slingshotLocked = false;
+    this.lockedCandidateIdx = -1;
+    this.currentCandidateIdx = -1;
   }
 
   setBodies(bodyList) {
@@ -70,6 +77,7 @@ export class PhysicsEngine {
     this.timeRates = [1.0, 1.0, 1.0];
     this.slingshotLocked = false;
     this.lockedCandidateIdx = -1;
+    this.currentCandidateIdx = -1;
     this.slingshotTime = 0;
     this.sigmaIntegral = 0;
     this.cyclesCount = 0;
@@ -285,12 +293,22 @@ export class PhysicsEngine {
       const d01 = Math.max(0.01, sides.a1);
       const d12 = Math.max(0.01, sides.a2);
       const d20 = Math.max(0.01, sides.a3);
-      const m = this.bodies.map(b => b.mass);
-      const p0 = this.G * (m[1] / d01 + m[2] / d20);
-      const p1 = this.G * (m[0] / d01 + m[2] / d12);
-      const p2 = this.G * (m[0] / d20 + m[1] / d12);
-      const p_mean = (p0 + p1 + p2) / 3.0;
-      const cur_shear = (Math.max(p0, p1, p2) - Math.min(p0, p1, p2)) / Math.max(0.01, p_mean);
+      
+      let cur_shear = 0;
+      if (this.mode === 'atomic') {
+        const Z = 2.0;
+        const p1 = Z / d01 - 1.0 / d12;
+        const p2 = Z / d20 - 1.0 / d12;
+        const p_mean = Math.max(0.01, Math.abs(p1 + p2) / 2.0);
+        cur_shear = Math.abs(p1 - p2) / p_mean;
+      } else {
+        const m = this.bodies.map(b => b.mass);
+        const p0 = this.G * (m[1] / d01 + m[2] / d20);
+        const p1 = this.G * (m[0] / d01 + m[2] / d12);
+        const p2 = this.G * (m[0] / d20 + m[1] / d12);
+        const p_mean = (p0 + p1 + p2) / 3.0;
+        cur_shear = (Math.max(p0, p1, p2) - Math.min(p0, p1, p2)) / Math.max(0.01, p_mean);
+      }
       this.sigmaIntegral += cur_shear * totalDt;
 
       const min_dist = Math.min(d01, d12, d20);
@@ -308,39 +326,77 @@ export class PhysicsEngine {
 
     // 2. Stufe: Hyperbolischer Slingshot Phasen-Tracker (100% Deterministisch)
     if (!this.slingshotLocked && this.bodies.length === 3) {
-      const cm = this.calculateCenterOfMass();
       const eps2 = this.softening * this.softening;
-      
-      for (let i = 0; i < 3; i++) {
-        const bi = this.bodies[i];
-        let phi_i = 0;
-        for (let j = 0; j < 3; j++) {
-          if (i !== j) {
-            const bj = this.bodies[j];
-            const dist = Math.sqrt((bj.pos.x - bi.pos.x)**2 + (bj.pos.y - bi.pos.y)**2 + (bj.pos.z - bi.pos.z)**2 + eps2);
-            phi_i += this.G * bj.mass / dist;
+
+      if (this.mode === 'atomic') {
+        // ⚛️ Quanten-Atom: Helium-Kern (0) bleibt gebunden, nur Elektronen (1, 2) können autoionisieren
+        const b0 = this.bodies[0];
+        const Z = 2.0;
+        const d12 = Math.sqrt(
+          (this.bodies[1].pos.x - this.bodies[2].pos.x)**2 +
+          (this.bodies[1].pos.y - this.bodies[2].pos.y)**2 +
+          (this.bodies[1].pos.z - this.bodies[2].pos.z)**2 + eps2
+        );
+
+        for (let i = 1; i <= 2; i++) {
+          const bi = this.bodies[i];
+          const dx = bi.pos.x - b0.pos.x;
+          const dy = bi.pos.y - b0.pos.y;
+          const dz = bi.pos.z - b0.pos.z;
+          const dist_nuc = Math.sqrt(dx * dx + dy * dy + dz * dz + eps2);
+          const v2 = bi.vel.vx * bi.vel.vx + bi.vel.vy * bi.vel.vy + bi.vel.vz * bi.vel.vz;
+
+          // Spezifische Coulomb-Energie des Elektrons ε = 1/2 v² - Z/r_nuc + 1/r_12
+          const eps_coulomb = 0.5 * v2 - (Z / Math.max(0.01, dist_nuc)) + (1.0 / Math.max(0.01, d12));
+          const v_rad = (dx * bi.vel.vx + dy * bi.vel.vy + dz * bi.vel.vz) / Math.max(0.01, dist_nuc);
+
+          // Autoionisations-Kriterium: positive mechanische Bahnenergie + radiale Fluchtbewegung
+          if (eps_coulomb > 0.0 && v_rad > 0.05 && dist_nuc > 1.8) {
+            this.slingshotLocked = true;
+            this.lockedCandidateIdx = i;
+            this.currentCandidateIdx = i;
+            this.slingshotTime = this.time;
+            const remainingDist = Math.max(0.1, 14.0 - dist_nuc);
+            const v_eff = Math.max(v_rad, Math.sqrt(2.0 * eps_coulomb) * 0.85);
+            this.keplerFlightTime = remainingDist / Math.max(0.05, v_eff);
+            this.exactEjectionTime = this.time + this.keplerFlightTime;
+            break;
           }
         }
-        const v2 = bi.vel.vx*bi.vel.vx + bi.vel.vy*bi.vel.vy + bi.vel.vz*bi.vel.vz;
-        const eps_spec = 0.5 * v2 - phi_i;
-        
-        // Radiale Auswärtsbewegung bezüglich des Schwerpunkts
-        const dx = bi.pos.x - cm.x;
-        const dy = bi.pos.y - cm.y;
-        const dz = bi.pos.z - cm.z;
-        const dist_cm = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        const v_rad = (dx*bi.vel.vx + dy*bi.vel.vy + dz*bi.vel.vz) / Math.max(0.01, dist_cm);
-        
-        // Positive mechanische Bahnenergie + Auswärtsdrift = Hyperbolischer Auswurf!
-        if (eps_spec > 0.0 && v_rad > 0.05 && dist_cm > 1.8) {
-          this.slingshotLocked = true;
-          this.lockedCandidateIdx = i;
-          this.slingshotTime = this.time;
-          const remainingDist = Math.max(0.1, 14.0 - dist_cm);
-          const v_eff = Math.max(v_rad, Math.sqrt(2.0 * eps_spec) * 0.85);
-          this.keplerFlightTime = remainingDist / Math.max(0.05, v_eff);
-          this.exactEjectionTime = this.time + this.keplerFlightTime;
-          break;
+      } else {
+        const cm = this.calculateCenterOfMass();
+        for (let i = 0; i < 3; i++) {
+          const bi = this.bodies[i];
+          let phi_i = 0;
+          for (let j = 0; j < 3; j++) {
+            if (i !== j) {
+              const bj = this.bodies[j];
+              const dist = Math.sqrt((bj.pos.x - bi.pos.x)**2 + (bj.pos.y - bi.pos.y)**2 + (bj.pos.z - bi.pos.z)**2 + eps2);
+              phi_i += this.G * bj.mass / dist;
+            }
+          }
+          const v2 = bi.vel.vx*bi.vel.vx + bi.vel.vy*bi.vel.vy + bi.vel.vz*bi.vel.vz;
+          const eps_spec = 0.5 * v2 - phi_i;
+
+          // Radiale Auswärtsbewegung bezüglich des Schwerpunkts
+          const dx = bi.pos.x - cm.x;
+          const dy = bi.pos.y - cm.y;
+          const dz = bi.pos.z - cm.z;
+          const dist_cm = Math.sqrt(dx*dx + dy*dy + dz*dz);
+          const v_rad = (dx*bi.vel.vx + dy*bi.vel.vy + dz*bi.vel.vz) / Math.max(0.01, dist_cm);
+
+          // Positive mechanische Bahnenergie + Auswärtsdrift = Hyperbolischer Auswurf!
+          if (eps_spec > 0.0 && v_rad > 0.05 && dist_cm > 1.8) {
+            this.slingshotLocked = true;
+            this.lockedCandidateIdx = i;
+            this.currentCandidateIdx = i;
+            this.slingshotTime = this.time;
+            const remainingDist = Math.max(0.1, 14.0 - dist_cm);
+            const v_eff = Math.max(v_rad, Math.sqrt(2.0 * eps_spec) * 0.85);
+            this.keplerFlightTime = remainingDist / Math.max(0.05, v_eff);
+            this.exactEjectionTime = this.time + this.keplerFlightTime;
+            break;
+          }
         }
       }
     }
@@ -399,53 +455,120 @@ export class PhysicsEngine {
     const m = this.bodies.map(b => b.mass);
     const M_tot = m[0] + m[1] + m[2];
 
-    // Finde den leichtesten Körper (m_min)
-    let minIdx = 0;
-    if (m[1] < m[0] && m[1] <= m[2]) minIdx = 1;
-    else if (m[2] < m[0] && m[2] <= m[1]) minIdx = 2;
-    const m_min = m[minIdx];
-
-    // Initiales Gravitationspotential & Zeit-Schere ΔΦ
+    // Initiales Gravitations-/Coulomb-Potential & Zeit-Schere ΔΦ
     const { a1, a2, a3 } = this.getTriangleSides();
     const d01 = Math.max(0.01, a1);
     const d12 = Math.max(0.01, a2);
     const d20 = Math.max(0.01, a3);
 
-    const phi0 = this.G * (m[1] / d01 + m[2] / d20);
-    const phi1 = this.G * (m[0] / d01 + m[2] / d12);
-    const phi2 = this.G * (m[0] / d20 + m[1] / d12);
+    let stage1Idx = 0;
+    let minIdx = 0;
+    let confidence = 78;
+    let phi_shear_rel = 0;
 
-    const phi_max = Math.max(phi0, phi1, phi2);
-    const phi_min = Math.min(phi0, phi1, phi2);
-    const phi_mean = (phi0 + phi1 + phi2) / 3.0;
-    const delta_phi = phi_max - phi_min;
-    const phi_shear_rel = delta_phi / Math.max(0.01, phi_mean);
+    if (this.mode === 'atomic') {
+      // ⚛️ Quanten-Atom: Der Kern (0) wird NIEMALS ausgeworfen.
+      // Auswurf-Kandidaten sind ausschließlich die beiden Elektronen 1 (Cyan) und 2 (Magenta).
+      const Z = 2.0;
+      const b0 = this.bodies[0];
+      const b1 = this.bodies[1];
+      const b2 = this.bodies[2];
 
-    // 1. Stufe: Initialer Verwundbarkeits-Score Vi (vor dem Start)
-    let bestScore = -Infinity;
-    let stage1Idx = minIdx;
-    for (let i = 0; i < 3; i++) {
-      const b = this.bodies[i];
-      const phi_i = (i === 0) ? phi0 : ((i === 1) ? phi1 : phi2);
-      const v2 = b.vel.vx * b.vel.vx + b.vel.vy * b.vel.vy + b.vel.vz * b.vel.vz;
-      const xi = v2 / (2.0 * Math.max(0.01, phi_i));
-      const score = Math.pow(M_tot / b.mass, 1.5) * (1.0 + 1.2 * xi);
-      if (score > bestScore) {
-        bestScore = score;
-        stage1Idx = i;
+      const d10x = b1.pos.x - b0.pos.x, d10y = b1.pos.y - b0.pos.y, d10z = b1.pos.z - b0.pos.z;
+      const r10 = Math.max(0.01, Math.sqrt(d10x * d10x + d10y * d10y + d10z * d10z));
+      const v1_rad = (d10x * b1.vel.vx + d10y * b1.vel.vy + d10z * b1.vel.vz) / r10;
+
+      const d20x = b2.pos.x - b0.pos.x, d20y = b2.pos.y - b0.pos.y, d20z = b2.pos.z - b0.pos.z;
+      const r20 = Math.max(0.01, Math.sqrt(d20x * d20x + d20y * d20y + d20z * d20z));
+      const v2_rad = (d20x * b2.vel.vx + d20y * b2.vel.vy + d20z * b2.vel.vz) / r20;
+
+      const v1_sq = b1.vel.vx * b1.vel.vx + b1.vel.vy * b1.vel.vy + b1.vel.vz * b1.vel.vz;
+      const v2_sq = b2.vel.vx * b2.vel.vx + b2.vel.vy * b2.vel.vy + b2.vel.vz * b2.vel.vz;
+
+      // Exakte spezifische Coulomb-Bahnenergie ε = 1/2 v² - Z/r_nuc + 1/r_12
+      const eps1 = 0.5 * v1_sq - (Z / r10) + (1.0 / d12);
+      const eps2 = 0.5 * v2_sq - (Z / r20) + (1.0 / d12);
+
+      // Coulomb Zeit-Schere ΔΦ über die beiden Elektronen
+      const phi1 = Z / r10 - 1.0 / d12;
+      const phi2 = Z / r20 - 1.0 / d12;
+      const phi_mean = Math.max(0.01, Math.abs(phi1 + phi2) / 2.0);
+      phi_shear_rel = Math.abs(phi1 - phi2) / phi_mean;
+
+      // Stufe 1: Bestimme das am schwächsten gebundene bzw. auswärts fliegende Elektron
+      if (eps2 > 0 && v2_rad > 0.05 && r20 > 1.8) {
+        stage1Idx = 2;
+        confidence = 98;
+      } else if (eps1 > 0 && v1_rad > 0.05 && r10 > 1.8) {
+        stage1Idx = 1;
+        confidence = 98;
+      } else if (r20 > r10 * 1.35 && v2_rad >= 0) {
+        stage1Idx = 2;
+        confidence = 92;
+      } else if (r10 > r20 * 1.35 && v1_rad >= 0) {
+        stage1Idx = 1;
+        confidence = 92;
+      } else {
+        // Höhere spezifische Energie = schwächere Bindung = primärer Auswurf-Kandidat
+        stage1Idx = (eps2 >= eps1) ? 2 : 1;
+        const deltaE = Math.abs(eps2 - eps1);
+        confidence = Math.min(95, Math.max(78, Math.round(80 + deltaE * 40)));
       }
+      minIdx = stage1Idx;
+    } else {
+      // 🌌 Kosmischer Modus: Gravitations-Verwundbarkeit
+      minIdx = 0;
+      if (m[1] < m[0] && m[1] <= m[2]) minIdx = 1;
+      else if (m[2] < m[0] && m[2] <= m[1]) minIdx = 2;
+
+      const phi0 = this.G * (m[1] / d01 + m[2] / d20);
+      const phi1 = this.G * (m[0] / d01 + m[2] / d12);
+      const phi2 = this.G * (m[0] / d20 + m[1] / d12);
+
+      const phi_max = Math.max(phi0, phi1, phi2);
+      const phi_min = Math.min(phi0, phi1, phi2);
+      const phi_mean = (phi0 + phi1 + phi2) / 3.0;
+      const delta_phi = phi_max - phi_min;
+      phi_shear_rel = delta_phi / Math.max(0.01, phi_mean);
+
+      let bestScore = -Infinity;
+      stage1Idx = minIdx;
+      for (let i = 0; i < 3; i++) {
+        const b = this.bodies[i];
+        const phi_i = (i === 0) ? phi0 : ((i === 1) ? phi1 : phi2);
+        const v2 = b.vel.vx * b.vel.vx + b.vel.vy * b.vel.vy + b.vel.vz * b.vel.vz;
+        const xi = v2 / (2.0 * Math.max(0.01, phi_i));
+        const score = Math.pow(M_tot / b.mass, 1.5) * (1.0 + 1.2 * xi);
+        if (score > bestScore) {
+          bestScore = score;
+          stage1Idx = i;
+        }
+      }
+
+      const m_min = m[minIdx];
+      const m_max = Math.max(m[0], m[1], m[2]);
+      const m_ratio = m_max / Math.max(0.01, m_min);
+      if (m_ratio > 1.4) confidence = 85;
+      if (m_ratio > 2.0) confidence = 92;
     }
 
-    // 2-Stufen Auswurf-Kandidaten-Wahl:
-    // Ist der Hyperbolische Phasenriss bereits aufgetreten? -> 100% Deterministisch!
-    // Andernfalls: Stufe 1 Schwachstellen-Vektor (78-89% Konfidenz)
+    // 2-Stufen Auswurf-Kandidaten-Wahl mit Hysterese-Schutz gegen Oszillations-Flackern:
     let activeIdx = stage1Idx;
-    let confidence = 78;
     let stageLabel = 'Stufe 1 (Initial)';
-    const m_max = Math.max(m[0], m[1], m[2]);
-    const m_ratio = m_max / Math.max(0.01, m_min);
-    if (m_ratio > 1.4) confidence = 85;
-    if (m_ratio > 2.0) confidence = 92;
+
+    if (this.currentCandidateIdx !== undefined && this.currentCandidateIdx >= 0) {
+      if (this.mode === 'atomic') {
+        const prevIdx = this.currentCandidateIdx;
+        const otherIdx = (prevIdx === 1) ? 2 : 1;
+        const b0 = this.bodies[0];
+        const r_prev = Math.sqrt((this.bodies[prevIdx].pos.x - b0.pos.x)**2 + (this.bodies[prevIdx].pos.y - b0.pos.y)**2 + (this.bodies[prevIdx].pos.z - b0.pos.z)**2);
+        const r_other = Math.sqrt((this.bodies[otherIdx].pos.x - b0.pos.x)**2 + (this.bodies[otherIdx].pos.y - b0.pos.y)**2 + (this.bodies[otherIdx].pos.z - b0.pos.z)**2);
+        // Behalte bisherigen Kandidaten bei, wenn dieser weiter außen ist oder bereits signifikante Energie besitzt
+        if (r_prev >= r_other * 0.95 && r_prev > 1.4) {
+          activeIdx = prevIdx;
+        }
+      }
+    }
 
     if (this.slingshotLocked && this.lockedCandidateIdx >= 0) {
       activeIdx = this.lockedCandidateIdx;
@@ -453,7 +576,8 @@ export class PhysicsEngine {
       stageLabel = 'Stufe 2: Phasenriss (100% Sicher)';
     }
 
-    const candidateBody = this.bodies[activeIdx] || this.bodies[minIdx];
+    this.currentCandidateIdx = activeIdx;
+    const candidateBody = this.bodies[activeIdx] || this.bodies[0];
 
     // Konservierte Gesamtenergie |E|
     const rawE = (this.initialEnergy !== null && this.initialEnergy !== undefined) ? this.initialEnergy : this.calculateTotalEnergy();

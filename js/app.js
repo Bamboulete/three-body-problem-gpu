@@ -4,9 +4,9 @@
  * 3D-Renderer, Mission-Control-HUD und das Live-Monte-Carlo-Labor.
  */
 
-import { PhysicsEngine } from './physics.js?v=3';
-import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=3';
-import { SceneRenderer } from './renderer.js?v=3';
+import { PhysicsEngine } from './physics.js?v=5';
+import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=5';
+import { SceneRenderer } from './renderer.js?v=5';
 
 class TrinityApp {
   constructor() {
