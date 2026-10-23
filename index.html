@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trinitäts-Topologie | 3-Körper-Laboratorium & Ω-Spannungsenergie</title>
-  <meta name="description" content="Interaktive 3D-Simulation des Drei-Körper-Problems und Erforschung der Trinitäts-Topologie und des Ω-Spannungsoperators.">
+  <title>Trinitäts-Topologie | 3-Körper-Laboratorium & Skalen-Universalität</title>
+  <meta name="description" content="Interaktive 3D-Simulation des Drei-Körper-Problems, Erforschung der Trinitäts-Topologie, Ω-Spannungsenergie und 26 Größenordnungen Skalen-Invarianz (Kosmos bis Helium-Atom).">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -33,335 +33,415 @@
         </div>
         <div>
           <h1>Trinitäts-Topologie</h1>
-          <p class="subtitle">3-Körper-Laboratorium &middot; Geometrische Zustands-Forschung</p>
+          <p class="subtitle" id="header-subtitle">3-Körper-Labor &middot; Skalen-Universalität (10²⁶ m ↔ 10⁻¹⁰ m)</p>
         </div>
       </div>
+
+      <!-- Center: Dual Physics Mode Switcher -->
+      <div class="mode-switcher" id="mode-switcher">
+        <button class="mode-btn active" id="btn-mode-cosmic" data-mode="cosmic" title="Gravitations-Dreikörperproblem (3 Sterne)">
+          <span class="mode-icon">🌌</span>
+          <span class="mode-text">Kosmos (Sterne)</span>
+        </button>
+        <button class="mode-btn" id="btn-mode-atomic" data-mode="atomic" title="Coulomb-Dreikörperproblem: Helium (Kern Z=+2 + 2 Elektronen)">
+          <span class="mode-icon">⚛️</span>
+          <span class="mode-text">Quanten-Atom (Helium)</span>
+        </button>
+      </div>
+
+      <!-- Right: Research Badges & Live Telemetry -->
       <div class="header-badges">
+        <a href="https://zenodo.org/records/23595675" target="_blank" rel="noopener" class="badge badge-zenodo" title="Zenodo Open Science DOI: 10.5281/zenodo.23595675">
+          <span class="badge-doi-label">DOI</span> 10.5281/zenodo.23595675 ↗
+        </a>
+        <a href="paper/trinity_topology.pdf" target="_blank" class="badge badge-paper" title="Wissenschaftliches Paper öffnen (PDF)">
+          📄 Paper PDF
+        </a>
+        <a href="https://github.com/Bamboulete/three-body-problem-gpu" target="_blank" rel="noopener" class="badge badge-github" title="Open Source GitHub Repository (Bamboulete)">
+          ⭐ GitHub
+        </a>
         <span class="badge badge-rk4" id="badge-integrator">RK-4 Symplektisch</span>
         <span class="badge badge-fps" id="badge-fps">60 FPS</span>
         <span class="badge badge-time" id="badge-sim-time">t = 0.00 s</span>
       </div>
     </header>
 
-    <!-- Left Dashboard: Math & Omega Telemetry -->
+    <!-- Floating Mission Control HUD (At-a-Glance Cockpit) -->
+    <div id="mission-control-hud" class="glass-panel">
+      <!-- HUD Card 1: System-Zustand & Phase -->
+      <div class="hud-card" id="hud-card-status">
+        <div class="hud-label-row">
+          <span class="hud-icon">🔮</span>
+          <span class="hud-label">System-Zustand</span>
+        </div>
+        <div class="hud-main-val">
+          <span class="hud-status-badge status-stable" id="hud-status-badge">STABIL (Grenzzyklus)</span>
+        </div>
+        <div class="hud-sub" id="hud-status-sub">
+          Zwei-Phasen-Dynamik: N = 1 (Deterministisch)
+        </div>
+      </div>
+
+      <!-- HUD Card 2: Doppler-Tor (cos α) Gauge -->
+      <div class="hud-card" id="hud-card-doppler">
+        <div class="hud-label-row">
+          <span class="hud-icon">📡</span>
+          <span class="hud-label">Doppler-Tor (cos α)</span>
+          <span class="hud-val-text font-mono" id="hud-doppler-text">+0.30</span>
+        </div>
+        <div class="doppler-track-wrap">
+          <div class="doppler-track">
+            <div class="doppler-center-mark"></div>
+            <div class="doppler-needle" id="hud-doppler-needle" style="left: 65%;"></div>
+          </div>
+          <div class="doppler-scale-labels">
+            <span>-1.0 Sturm</span>
+            <span>0.0 Neutral</span>
+            <span>+1.0 Schild</span>
+          </div>
+        </div>
+        <div class="hud-sub" id="hud-doppler-desc">Tor verriegelt &middot; Resonanz-Schutz</div>
+      </div>
+
+      <!-- HUD Card 3: Zeit-Schere (ΔΦ) Asymmetrie -->
+      <div class="hud-card" id="hud-card-shear">
+        <div class="hud-label-row">
+          <span class="hud-icon">⏳</span>
+          <span class="hud-label">Zeit-Schere (ΔΦ)</span>
+          <span class="hud-val-text font-mono" id="hud-shear-text">0.45</span>
+        </div>
+        <div class="shear-meter-track">
+          <div class="shear-meter-fill" id="hud-shear-fill" style="width: 45%;"></div>
+        </div>
+        <div class="hud-sub" id="hud-shear-desc">Gravitatives Schirmungs-Gefälle</div>
+      </div>
+
+      <!-- HUD Card 4: Auswurf-Kandidat (t=0 Prädiktor) -->
+      <div class="hud-card" id="hud-card-pred">
+        <div class="hud-label-row">
+          <span class="hud-icon">🎯</span>
+          <span class="hud-label">Auswurf-Kandidat</span>
+          <span class="hud-conf-badge" id="hud-pred-conf">89%</span>
+        </div>
+        <div class="hud-main-val">
+          <span class="hud-candidate-name font-mono" id="hud-pred-target">Stern C (Magenta)</span>
+        </div>
+        <div class="hud-sub font-mono" id="hud-pred-detail">
+          Vorhersage: ~28.8s &middot; Zyklen: ~8
+        </div>
+      </div>
+    </div>
+
+    <!-- Left Dashboard: Math, Omega Telemetry & Predictor (Tabbed & Clean) -->
     <aside id="telemetry-panel" class="glass-panel side-panel">
-      <div class="panel-section-title">
-        <span class="icon">📐</span>
-        <h2>Trinitäts-Gewebe (GS)</h2>
+      <!-- Quick Tab Switcher -->
+      <div class="panel-tab-bar">
+        <button class="panel-tab-btn active" id="tab-nav-metrics" data-tab="metrics">
+          <span>📐</span> Metrik
+        </button>
+        <button class="panel-tab-btn" id="tab-nav-predictor" data-tab="predictor">
+          <span>⚛️</span> Prädiktor
+        </button>
+        <button class="panel-tab-btn" id="tab-nav-conservation" data-tab="conservation">
+          <span>⚖️</span> Erhaltung
+        </button>
       </div>
 
-      <!-- Omega Tension Hero Card -->
-      <div class="omega-card" id="omega-card">
-        <div class="omega-label-row">
-          <span class="omega-sym">Ω</span>
-          <span class="omega-title">Spannungs-Operator</span>
-          <span class="tension-state-badge" id="tension-state">Gleichgewicht</span>
-        </div>
-        <div class="omega-value-display">
-          <span id="omega-value">0.000</span>
-          <span class="omega-unit">E_pot</span>
-        </div>
-        <div class="tension-bar-wrapper">
-          <div class="tension-bar" id="tension-progress-bar"></div>
-        </div>
-        <div class="tension-detail-sub">
-          <span>Innere Feldspannung des Dreiecks</span>
-          <span id="omega-rate">dΩ/dt: 0.0</span>
-        </div>
-      </div>
-
-      <!-- Triangle Distances (a1, a2, a3) -->
-      <div class="metric-group">
-        <div class="metric-row">
-          <div class="metric-legend">
-            <span class="dot dot-ab"></span>
-            <span class="name">Seite a₁ (Kₐ ↔ K_b):</span>
+      <!-- TAB 1: METRIK & TOPOLOGIE -->
+      <div class="tab-pane active" id="tab-content-metrics">
+        <!-- Omega Tension Hero Card -->
+        <div class="omega-card" id="omega-card">
+          <div class="omega-label-row">
+            <span class="omega-sym" id="omega-sym">Ω</span>
+            <span class="omega-title" id="omega-title">Spannungs-Operator</span>
+            <span class="tension-state-badge" id="tension-state">Gleichgewicht</span>
           </div>
-          <span class="value font-mono" id="val-a1">0.00 AU</span>
-        </div>
-        <div class="bar-container">
-          <div class="mini-bar bar-ab" id="bar-a1"></div>
+          <div class="omega-value-display">
+            <span id="omega-value">0.000</span>
+            <span class="omega-unit">E_pot</span>
+          </div>
+          <div class="tension-bar-wrapper">
+            <div class="tension-bar" id="tension-progress-bar"></div>
+          </div>
+          <div class="tension-detail-sub">
+            <span id="omega-desc-sub">Innere Feldspannung des Dreiecks</span>
+            <span id="omega-rate">dΩ/dt: 0.0</span>
+          </div>
         </div>
 
-        <div class="metric-row">
-          <div class="metric-legend">
-            <span class="dot dot-bc"></span>
-            <span class="name">Seite a₂ (K_b ↔ K_c):</span>
+        <!-- Triangle Distances (a1, a2, a3) -->
+        <div class="metric-group">
+          <div class="metric-row">
+            <div class="metric-legend">
+              <span class="dot dot-ab"></span>
+              <span class="name" id="label-side-a1">Seite a₁ (Kₐ ↔ K_b):</span>
+            </div>
+            <span class="value font-mono" id="val-a1">0.00 AU</span>
           </div>
-          <span class="value font-mono" id="val-a2">0.00 AU</span>
-        </div>
-        <div class="bar-container">
-          <div class="mini-bar bar-bc" id="bar-a2"></div>
+          <div class="bar-container">
+            <div class="mini-bar bar-ab" id="bar-a1"></div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-legend">
+              <span class="dot dot-bc"></span>
+              <span class="name" id="label-side-a2">Seite a₂ (K_b ↔ K_c):</span>
+            </div>
+            <span class="value font-mono" id="val-a2">0.00 AU</span>
+          </div>
+          <div class="bar-container">
+            <div class="mini-bar bar-bc" id="bar-a2"></div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-legend">
+              <span class="dot dot-ca"></span>
+              <span class="name" id="label-side-a3">Seite a₃ (K_c ↔ Kₐ):</span>
+            </div>
+            <span class="value font-mono" id="val-a3">0.00 AU</span>
+          </div>
+          <div class="bar-container">
+            <div class="mini-bar bar-ca" id="bar-a3"></div>
+          </div>
         </div>
 
-        <div class="metric-row">
-          <div class="metric-legend">
-            <span class="dot dot-ca"></span>
-            <span class="name">Seite a₃ (K_c ↔ Kₐ):</span>
+        <!-- Triangle Area & Shape Index -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Dreiecksfläche (GS)</div>
+            <div class="stat-value font-mono" id="val-area">0.00 AU²</div>
           </div>
-          <span class="value font-mono" id="val-a3">0.00 AU</span>
+          <div class="stat-box">
+            <div class="stat-label">Symmetrie-Index</div>
+            <div class="stat-value font-mono" id="val-symmetry">100%</div>
+          </div>
         </div>
-        <div class="bar-container">
-          <div class="mini-bar bar-ca" id="bar-a3"></div>
-        </div>
-      </div>
 
-      <!-- Triangle Area & Shape Index -->
-      <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-label">Dreiecksfläche (GS)</div>
-          <div class="stat-value font-mono" id="val-area">0.00 AU²</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Symmetrie-Index</div>
-          <div class="stat-value font-mono" id="val-symmetry">100%</div>
-        </div>
-      </div>
-
-      <!-- Stabilitäts-Filter / Chaos-Prädiktor Card -->
-      <div class="stability-card" id="stability-card">
-        <div class="stability-header">
-          <div class="stability-label-group">
-            <span class="stability-icon">🔮</span>
-            <span class="stability-title">Topologischer Stabilitäts-Filter</span>
+        <!-- Real-Time Oscilloscope -->
+        <div class="chart-header-row" style="margin-top: 14px;">
+          <div class="panel-section-title" style="margin-bottom: 0;">
+            <span class="icon">📈</span>
+            <h3 id="chart-title">Ω-Oszilloskop</h3>
           </div>
-          <span class="stability-badge" id="stability-badge">98% STABIL</span>
-        </div>
-        <div class="stability-status-text" id="stability-status-text">Stabil Periodisch (Grenzzyklus)</div>
-        <div class="stability-desc-text" id="stability-desc-text">Geschlossene Schleife im Formraum. Das System kehrt exakt wieder (100% vorhersagbar).</div>
-      </div>
-
-      <!-- Multi-Eigenzeit & Zeit-Schere (Individuelle Uhren) -->
-      <div class="proper-time-card" id="proper-time-card">
-        <div class="proper-time-header">
-          <div class="proper-time-title-group">
-            <span class="proper-time-icon">⏳</span>
-            <span class="proper-time-title">Multi-Eigenzeiten (τ)</span>
-          </div>
-          <span class="rift-badge" id="rift-badge">Δτ: 0.000s</span>
-        </div>
-        <div class="time-clocks-grid">
-          <div class="clock-item">
-            <div class="clock-label"><span class="dot dot-a"></span> τₐ (Blau)</div>
-            <div class="clock-val font-mono" id="val-tau-a">0.00s</div>
-            <div class="clock-rate font-mono" id="val-rate-a">1.00x</div>
-          </div>
-          <div class="clock-item">
-            <div class="clock-label"><span class="dot dot-b"></span> τ_b (Gelb)</div>
-            <div class="clock-val font-mono" id="val-tau-b">0.00s</div>
-            <div class="clock-rate font-mono" id="val-rate-b">1.00x</div>
-          </div>
-          <div class="clock-item">
-            <div class="clock-label"><span class="dot dot-c"></span> τ_c (Rot)</div>
-            <div class="clock-val font-mono" id="val-tau-c">0.00s</div>
-            <div class="clock-rate font-mono" id="val-rate-c">1.00x</div>
+          <div class="chart-toggle-group">
+            <button class="chart-tab-btn active" id="tab-chart-time" title="Zeitverlauf (Wellen)">t-Welle</button>
+            <button class="chart-tab-btn" id="tab-chart-phase" title="Phasenraum (Ω vs dΩ/dt)">Phasenraum</button>
           </div>
         </div>
-        <div class="rift-status-desc" id="rift-status-desc">
-          Zeittakt synchron: Kein Phasen-Abriss.
+        <div class="chart-wrapper">
+          <canvas id="oscilloscope-canvas" width="280" height="110"></canvas>
+        </div>
+        <div class="chart-legend" id="chart-legend">
+          <span class="legend-item" style="color: #ff9e00;">— Ω Spannung</span>
+          <span class="legend-item" style="color: #00f0ff;">— a₁</span>
+          <span class="legend-item" style="color: #ff007f;">— a₂</span>
+          <span class="legend-item" style="color: #00ff88;">— a₃</span>
         </div>
       </div>
 
-      <!-- Pfad 3: Analytische Auswurf-Formel & Prädiktor (Symbolische KI) -->
-      <div class="formula-card" id="formula-card">
-        <div class="formula-header">
-          <div class="formula-title-group">
-            <span class="formula-icon">⚛️</span>
-            <span class="formula-title">Pfad 3: Analytische Formel</span>
+      <!-- TAB 2: PRÄDIKTOR & FORMEL -->
+      <div class="tab-pane" id="tab-content-predictor" style="display: none;">
+        <!-- Stabilitäts-Filter Card -->
+        <div class="stability-card" id="stability-card">
+          <div class="stability-header">
+            <div class="stability-label-group">
+              <span class="stability-icon">🔮</span>
+              <span class="stability-title">Stabilitäts-Filter</span>
+            </div>
+            <span class="stability-badge" id="stability-badge">98% STABIL</span>
           </div>
-          <span class="formula-badge" id="formula-badge">R² = 0.83</span>
+          <div class="stability-status-text" id="stability-status-text">Stabil Periodisch (Grenzzyklus)</div>
+          <div class="stability-desc-text" id="stability-desc-text">Geschlossene Schleife im Formraum. Das System kehrt exakt wieder (100% vorhersagbar).</div>
         </div>
 
-        <div class="formula-box">
-          <div class="formula-mode-switch">
-            <button class="f-mode-btn active" id="btn-fmode-plain" title="Einfach verständlich in Worten">Klartext-Verständnis</button>
-            <button class="f-mode-btn" id="fmode-math-btn" id="btn-fmode-math" title="Exakte algebraische Formel">Wissenschaft</button>
+        <!-- Pfad 3: Analytische Auswurf-Formel & Prädiktor -->
+        <div class="formula-card" id="formula-card">
+          <div class="formula-header">
+            <div class="formula-title-group">
+              <span class="formula-icon">⚛️</span>
+              <span class="formula-title">Pfad 3: Analytische Formel</span>
+            </div>
+            <span class="formula-badge" id="formula-badge">R² = 0.83</span>
           </div>
 
-          <!-- Modus 1: Intuitive Klartext-Formel (Modular & Bildhaft) -->
-          <div class="formula-plain-view" id="formula-plain-view">
-            <div class="plain-frac-box">
-              <div class="plain-num">
-                <span class="pill pill-time" title="Diskrete Oszillationen vor dem Reißpunkt">🔄 (N − 1) Zyklen</span>
-                <span class="plain-op">×</span>
-                <span class="pill pill-shield" title="Charakteristische Orbit-Dauer T_orbit = 0.0051 · T_scale (10M Kalibriert)">⏱️ T_orbit</span>
-                <span class="plain-op">+</span>
-                <span class="pill pill-rift" title="Dynamische Kepler-Flugzeit der Auswurf-Hyperbel: 1.73 · √(14³ / G·M_tot)">🚀 t_Kepler</span>
+          <div class="formula-box">
+            <div class="formula-mode-switch">
+              <button class="f-mode-btn active" id="btn-fmode-plain" title="Einfach verständlich in Worten">Klartext</button>
+              <button class="f-mode-btn" id="btn-fmode-math" title="Exakte algebraische Formel">Wissenschaft</button>
+            </div>
+
+            <!-- Klartext-Formel -->
+            <div class="formula-plain-view" id="formula-plain-view">
+              <div class="plain-frac-box">
+                <div class="plain-num">
+                  <span class="pill pill-time" title="Diskrete Oszillationen vor dem Reißpunkt">🔄 (N − 1) Zyklen</span>
+                  <span class="plain-op">×</span>
+                  <span class="pill pill-shield" title="Charakteristische Orbit-Dauer">⏱️ T_orbit</span>
+                  <span class="plain-op">+</span>
+                  <span class="pill pill-rift" title="Dynamische Kepler-Flugzeit">🚀 t_Kepler</span>
+                </div>
+                <div class="plain-divider"></div>
+                <div class="plain-den">
+                  <span class="pill pill-mass">N = 1 + round(</span>
+                  <span class="pill pill-shield">🛡️ Kreisel</span>
+                  <span class="plain-op">/</span>
+                  <span class="pill pill-rift">⏳ (ΔΦ + 0.05)</span>
+                  <span class="plain-op">×</span>
+                  <span class="pill pill-gate">📡 Doppler-Tor</span>
+                  <span class="pill pill-mass">)</span>
+                </div>
               </div>
-              <div class="plain-divider"></div>
-              <div class="plain-den">
-                <span class="pill pill-mass" title="Reine Zyklen-Formel">N = 1 + round(</span>
-                <span class="pill pill-shield" title="Drehimpuls-Schutzfaktor 1 + η^0.19 (10M Kalibriert)">🛡️ Kreisel</span>
-                <span class="plain-op">/</span>
-                <span class="pill pill-rift" title="Relative Zeit-Schere: Gravitatives Eigenzeit-Gefälle (ΔΦ + 0.05)">⏳ (ΔΦ + 0.05)</span>
-                <span class="plain-op">×</span>
-                <span class="pill pill-gate" title="Doppler-Phasentor: Sturzflug vs. Resonanz-Auswärtsflug (k=12)">📡 Doppler-Tor</span>
-                <span class="pill pill-mass">)</span>
+              <div class="plain-numbers-row" id="plain-numbers-row">
+                <span class="font-mono text-cyan" style="font-weight: 700;">28.8 s</span> = (<span class="font-mono text-green">8 Zyklen</span> − 1) × <span class="font-mono">3.3 s</span> + <span class="font-mono text-gold">5.5 s</span>
               </div>
             </div>
-            <div class="plain-numbers-row" id="plain-numbers-row">
-              <span class="font-mono text-cyan" style="font-weight: 700;">28.8 s</span> = (<span class="font-mono text-green">8 Zyklen</span> − 1) × <span class="font-mono">3.3 s</span> + <span class="font-mono text-gold">5.5 s</span>
+
+            <!-- Wissenschaftliche Formel -->
+            <div class="formula-math-view" id="formula-math-view" style="display: none;">
+              <div class="formula-math">
+                <span class="f-var">T</span><sub>auswurf</sub> = (<span class="f-var">N</span> − 1) · <span class="f-var">T</span><sub>orbit</sub> + <span class="f-var">t</span><sub>Kepler</sub>
+                <br>
+                <span style="font-size: 0.70rem; color: #a0a0c0; display: inline-block; margin-top: 4px;">
+                  mit <span class="f-var">N</span> = 1 + round[ (<span class="f-frac"><span class="f-num">1.002 · (1 + η<sup>0.19</sup>)</span><span class="f-den">ΔΦ<sub>rel</sub> + 0.05</span></span> − 1) · Gate(cos α) ]
+                </span>
+              </div>
+              <div class="formula-subnote">
+                Doppler Gate(cos α) = ½·(1 + tanh(12·cos α)) & T<sub>orbit</sub> = 0.0051·T<sub>scale</sub>
+              </div>
             </div>
           </div>
 
-          <!-- Modus 2: Exakte wissenschaftliche Formel -->
-          <div class="formula-math-view" id="formula-math-view" style="display: none;">
-            <div class="formula-math">
-              <span class="f-var">T</span><sub>auswurf</sub> = (<span class="f-var">N</span> − 1) · <span class="f-var">T</span><sub>orbit</sub> + <span class="f-var">t</span><sub>Kepler</sub>
-              <br>
-              <span style="font-size: 0.70rem; color: #a0a0c0; display: inline-block; margin-top: 4px;">
-                mit <span class="f-var">N</span> = 1 + round[ (<span class="f-frac"><span class="f-num">1.002 · (1 + η<sup>0.19</sup>)</span><span class="f-den">ΔΦ<sub>rel</sub> + 0.05</span></span> − 1) · Gate(cos α) ]
-              </span>
+          <div class="pred-grid">
+            <div class="pred-cell">
+              <span class="pred-label" id="pred-stage-label">Auswurf-Kandidat:</span>
+              <div class="pred-value-row">
+                <span class="pred-target" id="pred-target">Stern C (Rot)</span>
+                <span class="pred-conf" id="pred-conf">89%</span>
+              </div>
             </div>
-            <div class="formula-subnote">
-              Doppler Gate(cos α) = ½·(1 + tanh(12·cos α)) & T<sub>orbit</sub> = 0.0051·T<sub>scale</sub>
+            <div class="pred-cell">
+              <span class="pred-label">Snapshot-Vorhersage:</span>
+              <div class="pred-value-row">
+                <span class="pred-time font-mono" id="pred-time">~28.8 s</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="slingshot-info-row">
+            <span class="slingshot-label">Rotations-Schutz: <strong id="val-rot-bonus" style="color: #ffb703;">+18%</strong></span>
+            <span class="slingshot-label">Doppler-Tor: <strong id="val-doppler-gate" style="color: #00ff88;">Resonanz (+0.30)</strong></span>
+          </div>
+
+          <div class="slingshot-info-row" style="margin-top: -4px;">
+            <span class="slingshot-label">Resonanz-Zyklus: <strong id="val-cycles-count" style="color: #00ff88;">0 / ~8</strong></span>
+            <span class="slingshot-label">Zeit-Schere: <strong id="val-phase-integral" style="color: #ff007f;">Σ = 0.0</strong></span>
+          </div>
+
+          <div class="pred-tracker">
+            <div class="tracker-header">
+              <span id="tracker-status">Zeit bis Bruch:</span>
+              <span class="font-mono" id="tracker-pct">0%</span>
+            </div>
+            <div class="tracker-bar-bg">
+              <div class="tracker-bar-fill" id="tracker-bar-fill"></div>
             </div>
           </div>
         </div>
 
-        <div class="pred-grid">
-          <div class="pred-cell">
-            <span class="pred-label" id="pred-stage-label">Auswurf-Kandidat:</span>
-            <div class="pred-value-row">
-              <span class="pred-target" id="pred-target">Stern C (Rot)</span>
-              <span class="pred-conf" id="pred-conf">89%</span>
+        <!-- Multi-Eigenzeit & Zeit-Schere -->
+        <div class="proper-time-card" id="proper-time-card">
+          <div class="proper-time-header">
+            <div class="proper-time-title-group">
+              <span class="proper-time-icon">⏳</span>
+              <span class="proper-time-title">Multi-Eigenzeiten (τ)</span>
+            </div>
+            <span class="rift-badge" id="rift-badge">Δτ: 0.000s</span>
+          </div>
+          <div class="time-clocks-grid">
+            <div class="clock-item">
+              <div class="clock-label" id="label-tau-a"><span class="dot dot-a"></span> τₐ (Cyan)</div>
+              <div class="clock-val font-mono" id="val-tau-a">0.00s</div>
+              <div class="clock-rate font-mono" id="val-rate-a">1.00x</div>
+            </div>
+            <div class="clock-item">
+              <div class="clock-label" id="label-tau-b"><span class="dot dot-b"></span> τ_b (Gold)</div>
+              <div class="clock-val font-mono" id="val-tau-b">0.00s</div>
+              <div class="clock-rate font-mono" id="val-rate-b">1.00x</div>
+            </div>
+            <div class="clock-item">
+              <div class="clock-label" id="label-tau-c"><span class="dot dot-c"></span> τ_c (Magenta)</div>
+              <div class="clock-val font-mono" id="val-tau-c">0.00s</div>
+              <div class="clock-rate font-mono" id="val-rate-c">1.00x</div>
             </div>
           </div>
-          <div class="pred-cell">
-            <span class="pred-label">Snapshot-Vorhersage:</span>
-            <div class="pred-value-row">
-              <span class="pred-time font-mono" id="pred-time">~28.8 s</span>
-            </div>
+          <div class="rift-status-desc" id="rift-status-desc">
+            Zeittakt synchron: Kein Phasen-Abriss.
           </div>
         </div>
 
-        <!-- Physikalische Phasen-Auflösung -->
-        <div class="slingshot-info-row">
-          <span class="slingshot-label">Rotations-Schutz: <strong id="val-rot-bonus" style="color: #ffb703;">+18%</strong></span>
-          <span class="slingshot-label">Doppler-Tor: <strong id="val-doppler-gate" style="color: #00ff88;">Resonanz (+0.30)</strong></span>
-        </div>
-
-        <div class="slingshot-info-row" style="margin-top: -4px;">
-          <span class="slingshot-label">Resonanz-Zyklus: <strong id="val-cycles-count" style="color: #00ff88;">0 / ~8</strong></span>
-          <span class="slingshot-label">Zeit-Schere: <strong id="val-phase-integral" style="color: #ff007f;">Σ = 0.0</strong></span>
-        </div>
-
-        <div class="pred-tracker">
-          <div class="tracker-header">
-            <span id="tracker-status">Zeit bis Bruch:</span>
-            <span class="font-mono" id="tracker-pct">0%</span>
-          </div>
-          <div class="tracker-bar-bg">
-            <div class="tracker-bar-fill" id="tracker-bar-fill"></div>
-          </div>
-        </div>
-
-        <!-- Physik-Erklärung: Zeit-Schere & Doppler-Tor -->
         <details class="theory-details">
           <summary>💡 Wie funktionieren Zeit-Schere & Doppler-Tor?</summary>
           <div class="theory-content">
-            <p><strong>⏳ Gravitative Zeit-Schere (ΔΦ):</strong> Wenn zwei Sterne ein enges Paar bilden, stürzen sie tief in einen Gravitations-Trichter. Ihre Eigenzeit verlangsamt sich relativ zum äußeren Begleiter. Je steiler dieses Gefälle ist (die "Schere"), desto stärker schirmt sich der Doppelstern ab und hält das System stabil (z.B. Alpha Centauri).</p>
-            <p><strong>📡 Das Doppler-Tor (cos α):</strong> Misst den Einflug-Winkel des dritten Sterns zum Drehsinn des inneren Paares:</p>
-            <p>• <em>Retrograd (cos α → -1.0):</em> <strong>Tor weit offen!</strong> Frontaler Gegenverkehr überträgt maximalen Impuls. Der Stern wird fast sofort herauskatapultiert (z.B. Orion-Slingshot AE Aurigae).</p>
-            <p>• <em>Prograd (cos α → +1.0):</em> <strong>Tor verriegelt!</strong> Minimaler Relativstoß; der Stern wird in eine kreisförmige Resonanz gefangen.</p>
+            <p><strong>⏳ Gravitative Zeit-Schere (ΔΦ):</strong> Wenn zwei Körper ein enges Paar bilden, stürzen sie tief in einen Trichter. Ihre Eigenzeit verlangsamt sich relativ zum äußeren Begleiter. Je steiler dieses Gefälle ist (die "Schere"), desto stärker schirmt sich das Paar ab und hält das System stabil.</p>
+            <p><strong>📡 Das Doppler-Tor (cos α):</strong> Misst den Einflug-Winkel des dritten Körpers:</p>
+            <p>• <em>Retrograd (cos α → -1.0):</em> <strong>Tor weit offen!</strong> Frontaler Gegenverkehr überträgt maximalen Impuls → Sofortiger Auswurf.</p>
+            <p>• <em>Prograd (cos α → +1.0):</em> <strong>Tor verriegelt!</strong> Minimaler Relativstoß → Resonanz-Einfang.</p>
           </div>
         </details>
       </div>
 
-      <!-- Conservation Laws -->
-      <div class="panel-section-title" style="margin-top: 14px;">
-        <span class="icon">⚖️</span>
-        <h3>Erhaltungsgrößen</h3>
-      </div>
-      <div class="conservation-box">
-        <div class="cons-row">
-          <span>Gesamtenergie E:</span>
-          <span class="font-mono" id="val-energy-tot">0.000</span>
+      <!-- TAB 3: ERHALTUNGSGRÖSSEN -->
+      <div class="tab-pane" id="tab-content-conservation" style="display: none;">
+        <div class="panel-section-title">
+          <span class="icon">⚖️</span>
+          <h3>Erhaltungsgrößen</h3>
         </div>
-        <div class="cons-row sub">
-          <span>Kinetisch T / Potentiell V:</span>
-          <span class="font-mono" id="val-energy-split">0.0 / 0.0</span>
+        <div class="conservation-box">
+          <div class="cons-row">
+            <span>Gesamtenergie E:</span>
+            <span class="font-mono" id="val-energy-tot">0.000</span>
+          </div>
+          <div class="cons-row sub">
+            <span>Kinetisch T / Potentiell V:</span>
+            <span class="font-mono" id="val-energy-split">0.0 / 0.0</span>
+          </div>
+          <div class="cons-row">
+            <span>Energie-Drift ΔE:</span>
+            <span class="font-mono color-green" id="val-energy-drift">0.000%</span>
+          </div>
+          <div class="cons-row">
+            <span>Drehimpuls |L|:</span>
+            <span class="font-mono" id="val-momentum">0.000</span>
+          </div>
         </div>
-        <div class="cons-row">
-          <span>Energie-Drift ΔE:</span>
-          <span class="font-mono color-green" id="val-energy-drift">0.000%</span>
-        </div>
-        <div class="cons-row">
-          <span>Drehimpuls |L|:</span>
-          <span class="font-mono" id="val-momentum">0.000</span>
-        </div>
-      </div>
 
-      <!-- Chart Header with Time vs Phase-Space Toggle -->
-      <div class="chart-header-row">
-        <div class="panel-section-title" style="margin-bottom: 0;">
-          <span class="icon">📈</span>
-          <h3 id="chart-title">Ω-Oszilloskop</h3>
+        <div class="theory-content" style="margin-top: 14px; font-size: 0.74rem; color: #8e9bb4; line-height: 1.45;">
+          <p><strong>Symplektische Liouville-Erhaltung:</strong> Der 4th-Order Runge-Kutta Integrator erhält das Phasenraum-Volumen ohne säkulare Energiedrift. Bei engen Begegnungen dämpft der Softening-Parameter ε Singularitäten.</p>
         </div>
-        <div class="chart-toggle-group">
-          <button class="chart-tab-btn active" id="tab-chart-time" title="Zeitverlauf (Wellen)">t-Welle</button>
-          <button class="chart-tab-btn" id="tab-chart-phase" title="Phasenraum (Ω vs dΩ/dt)">Phasenraum</button>
-        </div>
-      </div>
-      <div class="chart-wrapper">
-        <canvas id="oscilloscope-canvas" width="280" height="110"></canvas>
-      </div>
-      <div class="chart-legend" id="chart-legend">
-        <span class="legend-item" style="color: #ff9e00;">— Ω Spannung</span>
-        <span class="legend-item" style="color: #00f0ff;">— a₁</span>
-        <span class="legend-item" style="color: #ff007f;">— a₂</span>
-        <span class="legend-item" style="color: #00ff88;">— a₃</span>
       </div>
     </aside>
 
-    <!-- Right Dashboard: Controls & Lab Presets -->
+    <!-- Right Dashboard: Presets & Controls + Monte-Carlo Feature -->
     <aside id="controls-panel" class="glass-panel side-panel">
-      <div class="panel-section-title">
-        <span class="icon">🧪</span>
-        <h2>Forschungs-Szenarien</h2>
+      <!-- Monte-Carlo Batch Launcher Hero Button -->
+      <div class="batch-launch-card">
+        <button class="batch-launch-btn" id="btn-open-monte-carlo">
+          <span class="batch-icon">⚡</span>
+          <div class="batch-btn-text">
+            <span class="batch-title">Live-Labor: X Systeme simulieren</span>
+            <span class="batch-sub">Monte-Carlo Batch (100 bis 10.000 Systeme)</span>
+          </div>
+        </button>
       </div>
 
-      <!-- Presets List -->
-      <div class="preset-buttons">
-        <button class="preset-btn active" id="btn-preset-figure8" data-preset="figure8">
-          <span class="preset-icon">♾️</span>
-          <div class="preset-info">
-            <span class="preset-name">Figure-8 Choreographie</span>
-            <span class="preset-desc">Chenciner & Montgomery (2000) – Stabile periodische Lösung</span>
-          </div>
-        </button>
+      <div class="panel-section-title" style="margin-top: 14px;">
+        <span class="icon" id="presets-section-icon">🧪</span>
+        <h2 id="presets-section-title">Forschungs-Szenarien</h2>
+      </div>
 
-        <button class="preset-btn" id="btn-preset-lagrange" data-preset="lagrange">
-          <span class="preset-icon">📐</span>
-          <div class="preset-info">
-            <span class="preset-name">Lagrange Gleichseitig (L4/L5)</span>
-            <span class="preset-desc">Rotierendes starres Dreieck – Geometrische Symmetrie</span>
-          </div>
-        </button>
-
-        <button class="preset-btn" id="btn-preset-trisolaris" data-preset="trisolaris">
-          <span class="preset-icon">☀️</span>
-          <div class="preset-info">
-            <span class="preset-name">Trisolaris Chaos</span>
-            <span class="preset-desc">Authentischer chaotischer Tanz & Beinahe-Kollisionen</span>
-          </div>
-        </button>
-
-        <button class="preset-btn" id="btn-preset-pythagoras" data-preset="pythagoras">
-          <span class="preset-icon">🔺</span>
-          <div class="preset-info">
-            <span class="preset-name">Pythagoras Problem (Burrau)</span>
-            <span class="preset-desc">Massen 3:4:5 im Ruhezustand – Extremer Stresstest</span>
-          </div>
-        </button>
-
-        <button class="preset-btn" id="btn-preset-euler" data-preset="euler">
-          <span class="preset-icon">↔️</span>
-          <div class="preset-info">
-            <span class="preset-name">Euler Kollinear</span>
-            <span class="preset-desc">Instabile Anordnung auf einer Linie</span>
-          </div>
-        </button>
+      <!-- Presets List (Populated dynamically based on mode) -->
+      <div class="preset-buttons" id="preset-buttons-container">
+        <!-- Will be filled by js/app.js -->
       </div>
 
       <!-- Perspective Toggle: Lab vs Shape Space -->
@@ -411,7 +491,7 @@
 
       <div class="slider-group">
         <div class="slider-header">
-          <label for="slider-softening">Gravitations-Softening (ε):</label>
+          <label for="slider-softening">Softening (ε):</label>
           <span class="font-mono" id="label-softening">0.05</span>
         </div>
         <input type="range" id="slider-softening" min="0.001" max="0.3" step="0.005" value="0.05">
@@ -438,12 +518,12 @@
 
       <!-- Masses Customizer Accordion -->
       <details class="masses-accordion" id="masses-accordion">
-        <summary>Massen konfigurieren (mₐ, m_b, m_c)</summary>
+        <summary id="masses-summary">Massen konfigurieren (mₐ, m_b, m_c)</summary>
         <div class="masses-body">
           <div class="slider-group">
             <div class="slider-header">
               <span class="dot dot-a"></span>
-              <label for="slider-mass-a">Masse Kₐ (Cyan):</label>
+              <label for="slider-mass-a" id="label-body-a">Masse Kₐ (Cyan):</label>
               <span class="font-mono" id="label-mass-a">1.0</span>
             </div>
             <input type="range" id="slider-mass-a" min="0.1" max="10.0" step="0.1" value="1.0">
@@ -451,7 +531,7 @@
           <div class="slider-group">
             <div class="slider-header">
               <span class="dot dot-b"></span>
-              <label for="slider-mass-b">Masse K_b (Gold):</label>
+              <label for="slider-mass-b" id="label-body-b">Masse K_b (Gold):</label>
               <span class="font-mono" id="label-mass-b">1.0</span>
             </div>
             <input type="range" id="slider-mass-b" min="0.1" max="10.0" step="0.1" value="1.0">
@@ -459,7 +539,7 @@
           <div class="slider-group">
             <div class="slider-header">
               <span class="dot dot-c"></span>
-              <label for="slider-mass-c">Masse K_c (Magenta):</label>
+              <label for="slider-mass-c" id="label-body-c">Masse K_c (Magenta):</label>
               <span class="font-mono" id="label-mass-c">1.0</span>
             </div>
             <input type="range" id="slider-mass-c" min="0.1" max="10.0" step="0.1" value="1.0">
@@ -470,11 +550,107 @@
 
     <!-- Bottom Hypothesis Banner / Insight Bar -->
     <footer id="hypothesis-banner" class="glass-panel">
-      <div class="banner-badge">HYPOTHESE</div>
+      <div class="banner-badge" id="hypothesis-badge">HYPOTHESE</div>
       <div class="banner-text" id="hypothesis-text">
         <strong>Trinitäts-Prämisse:</strong> Die Gravitationskraft wird hier nicht als isolierte Punkt-Vektoren verstanden, sondern als elastisches Spannungsfeld <strong>Ω</strong> im Deformationsraum des Dreiecks <strong>GS</strong>.
       </div>
     </footer>
+
+    <!-- Interactive Monte-Carlo Batch Simulation Modal -->
+    <div id="monte-carlo-modal" class="modal-backdrop">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">⚡</span>
+            <div>
+              <h3>Live-Monte-Carlo-Ensemble: Simulation mit X Systemen</h3>
+              <p class="modal-subtitle">Echtzeit-Statistik chaotischer Zerfälle und universelle 26-Größenordnungen-Skalierung</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="btn-close-monte-carlo" title="Schließen">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Parameter Bar -->
+          <div class="mc-control-bar">
+            <div class="mc-control-group">
+              <label>Physik-System:</label>
+              <div class="mc-btn-group">
+                <button class="mc-select-btn active" id="mc-mode-cosmic">🌌 Kosmos (Gravitation)</button>
+                <button class="mc-select-btn" id="mc-mode-atomic">⚛️ Helium-Atom (Coulomb)</button>
+              </div>
+            </div>
+
+            <div class="mc-control-group">
+              <label>System-Anzahl X:</label>
+              <div class="mc-btn-group">
+                <button class="mc-count-btn" data-count="100">100</button>
+                <button class="mc-count-btn" data-count="500">500</button>
+                <button class="mc-count-btn active" data-count="1000">1.000 (Empfohlen)</button>
+                <button class="mc-count-btn" data-count="5000">5.000</button>
+                <button class="mc-count-btn" data-count="10000">10.000</button>
+              </div>
+            </div>
+
+            <button class="mc-run-btn" id="btn-run-batch">
+              <span>🚀 Batch Simulieren</span>
+            </button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="mc-progress-wrapper" id="mc-progress-wrapper" style="display: none;">
+            <div class="mc-progress-bar" id="mc-progress-bar"></div>
+            <span class="mc-progress-text font-mono" id="mc-progress-text">Simuliere 0 / 1.000 Systeme...</span>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div class="mc-kpi-grid">
+            <div class="mc-kpi-card">
+              <span class="mc-kpi-label" id="mc-kpi-decay-label">Auswurf- / Zerfallsrate</span>
+              <div class="mc-kpi-val text-cyan font-mono" id="mc-stat-decay-pct">52.0%</div>
+              <span class="mc-kpi-sub" id="mc-stat-decays">520 / 1.000 Systeme zerfallen</span>
+            </div>
+
+            <div class="mc-kpi-card">
+              <span class="mc-kpi-label">Zwei-Phasen-Dynamik</span>
+              <div class="mc-kpi-val text-gold font-mono" id="mc-stat-phase-ratio">Phase 1 vs 2</div>
+              <span class="mc-kpi-sub" id="mc-stat-phases">Phase 1 (N≤4): 28.5% &middot; Phase 2 (N≥5): 71.5%</span>
+            </div>
+
+            <div class="mc-kpi-card">
+              <span class="mc-kpi-label">Fitted Zerfallsrate λ</span>
+              <div class="mc-kpi-val text-green font-mono" id="mc-stat-lambda">λ = 0.0567</div>
+              <span class="mc-kpi-sub" id="mc-stat-r2">Poisson-Fit R² = 0.9973</span>
+            </div>
+
+            <div class="mc-kpi-card">
+              <span class="mc-kpi-label">Trinity-Prädiktor Trefferquote</span>
+              <div class="mc-kpi-val text-magenta font-mono" id="mc-stat-accuracy">74.4%</div>
+              <span class="mc-kpi-sub">Auswurf-Kandidat bei t = 0</span>
+            </div>
+          </div>
+
+          <!-- Scatter Plot Canvas -->
+          <div class="mc-chart-box">
+            <div class="mc-chart-header">
+              <span>Phasenraum-Streudiagramm: Doppler-Tor (cos α) vs. Auswurfzeit (t)</span>
+              <div class="mc-chart-legend">
+                <span style="color: #00f0ff;">● Phase 1 (Deterministisch, N ≤ 4)</span>
+                <span style="color: #ff0055;">● Phase 2 (Ergodisch, N ≥ 5)</span>
+              </div>
+            </div>
+            <div class="mc-canvas-wrap">
+              <canvas id="mc-scatter-canvas" width="820" height="260"></canvas>
+            </div>
+          </div>
+
+          <!-- Universal Scaling Note -->
+          <div class="mc-footer-note" id="mc-footer-note">
+            💡 <strong>Universelle Skalen-Invarianz:</strong> Sowohl im kosmischen Gravitationssystem (10²⁶ m) als auch im semiklassischen Helium-Atom (10⁻¹⁰ m) dominiert dieselbe 1/r² Topologie: Der Wannier-Sattel (cos α → -1.0) bewirkt unmittelbaren Auswurf, während der prograde Orbit (cos α → +1.0) als metastabile Oase überlebt.
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>
