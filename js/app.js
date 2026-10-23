@@ -4,9 +4,9 @@
  * 3D-Renderer, Mission-Control-HUD und das Live-Monte-Carlo-Labor.
  */
 
-import { PhysicsEngine } from './physics.js?v=5';
-import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=5';
-import { SceneRenderer } from './renderer.js?v=5';
+import { PhysicsEngine } from './physics.js?v=6';
+import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=6';
+import { SceneRenderer } from './renderer.js?v=6';
 
 class TrinityApp {
   constructor() {
@@ -1058,7 +1058,10 @@ class TrinityApp {
     const loop = (currentTime) => {
       requestAnimationFrame(loop);
 
-      const delta = (currentTime - this.lastFrameTime) / 1000.0;
+      if (!this.lastFrameTime) {
+        this.lastFrameTime = currentTime;
+      }
+      const delta = Math.min((currentTime - this.lastFrameTime) / 1000.0, 0.05);
       this.lastFrameTime = currentTime;
       this.frameCount++;
 

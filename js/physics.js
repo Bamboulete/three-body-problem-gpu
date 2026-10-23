@@ -54,6 +54,10 @@ export class PhysicsEngine {
     this.exactEjectionTime = null;
     this.keplerFlightTime = 0;
 
+    // Feste, deterministische Integrationsschrittweite für reproduzierbare Laborbedingungen
+    this.accumulator = 0;
+    this.fixedSubDt = 0.0005; // 0.5 ms pro RK-4 Integrationsschritt
+
     // Physik-Modus: 'cosmic' (Gravitation) oder 'atomic' (Coulomb Helium)
     this.mode = 'cosmic';
   }
@@ -64,6 +68,7 @@ export class PhysicsEngine {
     this.slingshotLocked = false;
     this.lockedCandidateIdx = -1;
     this.currentCandidateIdx = -1;
+    this.accumulator = 0;
   }
 
   setBodies(bodyList) {
@@ -85,6 +90,7 @@ export class PhysicsEngine {
     this.prevDistRate = 0;
     this.exactEjectionTime = null;
     this.keplerFlightTime = 0;
+    this.accumulator = 0;
   }
 
   // Beschleunigungen berechnen für gegebenen Zustand (Gravitation oder Coulomb)
@@ -250,21 +256,30 @@ export class PhysicsEngine {
     }
   }
 
-  // Update Schleife mit Sub-Steps
+  // Update Schleife mit festem deterministischen Labor-Zeitschritt (Fixed Timestep Accumulator)
   update(frameDelta, speedMultiplier = 1.0) {
     if (this.bodies.length < 3) return;
 
-    // Begrenze dt gegen Lag-Spikes
-    const clampedDelta = Math.min(frameDelta, 0.05);
-    const totalDt = clampedDelta * speedMultiplier;
-    const subDt = totalDt / this.substeps;
+    // Begrenze frameDelta gegen extreme Lags / Hintergrund-Tabs (max 0.1s)
+    const clampedDelta = Math.min(frameDelta, 0.1);
+    this.accumulator += clampedDelta * speedMultiplier;
 
-    for (let s = 0; s < this.substeps; s++) {
-      this.rk4Step(subDt);
-      this.accumulateProperTimes(subDt);
+    // Feste, deterministische Integrationsschrittweite (vollkommen entkoppelt von Monitor-FPS)
+    const fixedSubDt = this.fixedSubDt;
+    const maxStepsPerFrame = 120; // Sicherheitsgrenze
+    let steps = 0;
+
+    while (this.accumulator >= fixedSubDt && steps < maxStepsPerFrame) {
+      this.rk4Step(fixedSubDt);
+      this.accumulateProperTimes(fixedSubDt);
+      this.time += fixedSubDt;
+      this.accumulator -= fixedSubDt;
+      steps++;
     }
 
-    this.time += totalDt;
+    if (steps === 0) return;
+
+    const totalDt = steps * fixedSubDt;
 
     // Ω-Dynamik & Veränderungsrate
     const currentOmega = this.calculateOmega();
