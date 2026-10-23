@@ -4,6 +4,7 @@
 *Independent Computational Astrophysics & GPU Systems Laboratory*  
 **Repository & Source Code:** [https://github.com/Bamboulete/three-body-problem-gpu](https://github.com/Bamboulete/three-body-problem-gpu)  
 **Date:** October 2026  
+**Permanent DOI:** [https://doi.org/10.5281/zenodo.23595675](https://doi.org/10.5281/zenodo.23595675)  
 **License:** MIT Open Science  
 
 ---

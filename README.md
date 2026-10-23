@@ -1,5 +1,6 @@
 # Trinity Topology: Chaotic Three-Body Problem at Scale
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23595675.svg)](https://doi.org/10.5281/zenodo.23595675)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen?style=for-the-badge&logo=github)](https://bamboulete.github.io/three-body-problem-gpu/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GPU: NVIDIA RTX 4070](https://img.shields.io/badge/GPU-RTX%204070%20(12GB)-green.svg)]()
@@ -9,7 +10,7 @@
 An ultra-high-throughput computational astrophysics laboratory and interactive 3D platform investigating chaotic three-body decays, orbital phase-space topologies, and early-orbit predictability.
 
 👉 **[Launch Interactive 3D Web Simulation Live](https://bamboulete.github.io/three-body-problem-gpu/)**  
-📄 **[Read Scientific Research Paper (PDF)](paper/trinity_topology.pdf)** | **[HTML Version](paper/trinity_topology.html)** | **[Markdown Source](paper/trinity_topology.md)**
+📄 **[Read Scientific Research Paper (PDF)](paper/trinity_topology.pdf)** | **[Official Zenodo DOI: 10.5281/zenodo.23595675](https://doi.org/10.5281/zenodo.23595675)** | **[HTML Version](paper/trinity_topology.html)**
 
 Powered by a register-tuned **CUDA C++ Symplectic Leapfrog engine** achieving over **4,200,000 systems per second** on consumer GPU hardware, and accompanied by a real-time 3D browser visualizer.
 
