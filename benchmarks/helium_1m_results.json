@@ -1,0 +1,9 @@
+{
+  "total_systems": 1000000,
+  "calc_time_sec": 0.1558239459991455,
+  "throughput_sys_per_sec": 6417498.886887922,
+  "num_ionized": 770674,
+  "num_bound": 229326,
+  "e1_ejected": 371002,
+  "e2_ejected": 399672
+}

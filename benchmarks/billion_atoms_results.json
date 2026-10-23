@@ -1,0 +1,13 @@
+{
+  "total_simulated": 1000000000,
+  "total_time_sec": 115.40868660004344,
+  "throughput_sys_per_sec": 8664859.02803458,
+  "total_ionized": 886108413,
+  "total_bound": 113891587,
+  "total_e1_ejected": 217749038,
+  "total_e2_ejected": 668359375,
+  "lambda_coulomb_au": 0.018730226137572824,
+  "lambda_per_orbit": 0.2354389425492904,
+  "r_squared": 0.8972453441186478,
+  "lambda_grav_per_orbit": 0.0567
+}

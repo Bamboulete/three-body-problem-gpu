@@ -1,0 +1,62 @@
+{
+  "Kepler-16 b": {
+    "a_inner": 0.5832015,
+    "a_outer": 0.7626559
+  },
+  "Kepler-34 b": {
+    "a_inner": 0.84663064,
+    "a_outer": 1.02968404
+  },
+  "Kepler-35 b": {
+    "a_inner": 0.44042499,
+    "a_outer": 0.49327824
+  },
+  "Kepler-38 b": {
+    "a_inner": 0.36724999,
+    "a_outer": 0.45538822
+  },
+  "Kepler-47 b": {
+    "a_inner": 0.15475372,
+    "a_outer": 0.18733593
+  },
+  "Kepler-47 d": {
+    "a_inner": 0.15475372,
+    "a_outer": 0.18733593
+  },
+  "Kepler-47 c": {
+    "a_inner": 0.15475372,
+    "a_outer": 0.18733593
+  },
+  "Kepler-64 b (PH1)": {
+    "a_inner": 0.47087592,
+    "a_outer": 0.59296148
+  },
+  "Kepler-413 b": {
+    "a_inner": 0.20296,
+    "a_outer": 0.2435513
+  },
+  "Kepler-453 b": {
+    "a_inner": 0.38931963,
+    "a_outer": 0.48201028
+  },
+  "Kepler-1647 b": {
+    "a_inner": 0.37004171,
+    "a_outer": 0.44660201
+  },
+  "Kepler-1661 b": {
+    "a_inner": 0.46749999,
+    "a_outer": 0.57969774
+  },
+  "TOI-1338 b (BEBOP-1 b)": {
+    "a_inner": 0.35666691,
+    "a_outer": 0.44914112
+  },
+  "BEBOP-1 c": {
+    "a_inner": 0.39629886,
+    "a_outer": 0.51518453
+  },
+  "TIC 172900988 b": {
+    "a_inner": 0.57479834,
+    "a_outer": 0.72807397
+  }
+}

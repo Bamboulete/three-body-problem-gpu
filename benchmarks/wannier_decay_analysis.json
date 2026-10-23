@@ -1,0 +1,9 @@
+{
+  "lambda_coulomb_au": 0.0049081653449302145,
+  "lambda_per_orbit": 0.0616956383857728,
+  "r_squared": 0.9656047595261683,
+  "lambda_wannier_theo": 1.3228756555322954,
+  "lambda_wannier_scaled": 0.0526203522486991,
+  "lambda_grav_per_orbit": 0.0567,
+  "deviation_percent": 8.810649710357671
+}

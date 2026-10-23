@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trinitäts-Topologie | 3-Körper-Laboratorium & Ω-Spannungsenergie</title>
+  <meta name="description" content="Interaktive 3D-Simulation des Drei-Körper-Problems und Erforschung der Trinitäts-Topologie und des Ω-Spannungsoperators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js and OrbitControls via unpkg / CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- 3D Canvas Viewport -->
+    <div id="canvas-container"></div>
+
+    <!-- Header Overlay -->
+    <header id="main-header" class="glass-panel">
+      <div class="header-left">
+        <div class="logo-mark">
+          <span class="symbol">Δ</span>
+          <span class="omega">Ω</span>
+        </div>
+        <div>
+          <h1>Trinitäts-Topologie</h1>
+          <p class="subtitle">3-Körper-Laboratorium &middot; Geometrische Zustands-Forschung</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-rk4" id="badge-integrator">RK-4 Symplektisch</span>
+        <span class="badge badge-fps" id="badge-fps">60 FPS</span>
+        <span class="badge badge-time" id="badge-sim-time">t = 0.00 s</span>
+      </div>
+    </header>
+
+    <!-- Left Dashboard: Math & Omega Telemetry -->
+    <aside id="telemetry-panel" class="glass-panel side-panel">
+      <div class="panel-section-title">
+        <span class="icon">📐</span>
+        <h2>Trinitäts-Gewebe (GS)</h2>
+      </div>
+
+      <!-- Omega Tension Hero Card -->
+      <div class="omega-card" id="omega-card">
+        <div class="omega-label-row">
+          <span class="omega-sym">Ω</span>
+          <span class="omega-title">Spannungs-Operator</span>
+          <span class="tension-state-badge" id="tension-state">Gleichgewicht</span>
+        </div>
+        <div class="omega-value-display">
+          <span id="omega-value">0.000</span>
+          <span class="omega-unit">E_pot</span>
+        </div>
+        <div class="tension-bar-wrapper">
+          <div class="tension-bar" id="tension-progress-bar"></div>
+        </div>
+        <div class="tension-detail-sub">
+          <span>Innere Feldspannung des Dreiecks</span>
+          <span id="omega-rate">dΩ/dt: 0.0</span>
+        </div>
+      </div>
+
+      <!-- Triangle Distances (a1, a2, a3) -->
+      <div class="metric-group">
+        <div class="metric-row">
+          <div class="metric-legend">
+            <span class="dot dot-ab"></span>
+            <span class="name">Seite a₁ (Kₐ ↔ K_b):</span>
+          </div>
+          <span class="value font-mono" id="val-a1">0.00 AU</span>
+        </div>
+        <div class="bar-container">
+          <div class="mini-bar bar-ab" id="bar-a1"></div>
+        </div>
+
+        <div class="metric-row">
+          <div class="metric-legend">
+            <span class="dot dot-bc"></span>
+            <span class="name">Seite a₂ (K_b ↔ K_c):</span>
+          </div>
+          <span class="value font-mono" id="val-a2">0.00 AU</span>
+        </div>
+        <div class="bar-container">
+          <div class="mini-bar bar-bc" id="bar-a2"></div>
+        </div>
+
+        <div class="metric-row">
+          <div class="metric-legend">
+            <span class="dot dot-ca"></span>
+            <span class="name">Seite a₃ (K_c ↔ Kₐ):</span>
+          </div>
+          <span class="value font-mono" id="val-a3">0.00 AU</span>
+        </div>
+        <div class="bar-container">
+          <div class="mini-bar bar-ca" id="bar-a3"></div>
+        </div>
+      </div>
+
+      <!-- Triangle Area & Shape Index -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Dreiecksfläche (GS)</div>
+          <div class="stat-value font-mono" id="val-area">0.00 AU²</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Symmetrie-Index</div>
+          <div class="stat-value font-mono" id="val-symmetry">100%</div>
+        </div>
+      </div>
+
+      <!-- Stabilitäts-Filter / Chaos-Prädiktor Card -->
+      <div class="stability-card" id="stability-card">
+        <div class="stability-header">
+          <div class="stability-label-group">
+            <span class="stability-icon">🔮</span>
+            <span class="stability-title">Topologischer Stabilitäts-Filter</span>
+          </div>
+          <span class="stability-badge" id="stability-badge">98% STABIL</span>
+        </div>
+        <div class="stability-status-text" id="stability-status-text">Stabil Periodisch (Grenzzyklus)</div>
+        <div class="stability-desc-text" id="stability-desc-text">Geschlossene Schleife im Formraum. Das System kehrt exakt wieder (100% vorhersagbar).</div>
+      </div>
+
+      <!-- Multi-Eigenzeit & Zeit-Schere (Individuelle Uhren) -->
+      <div class="proper-time-card" id="proper-time-card">
+        <div class="proper-time-header">
+          <div class="proper-time-title-group">
+            <span class="proper-time-icon">⏳</span>
+            <span class="proper-time-title">Multi-Eigenzeiten (τ)</span>
+          </div>
+          <span class="rift-badge" id="rift-badge">Δτ: 0.000s</span>
+        </div>
+        <div class="time-clocks-grid">
+          <div class="clock-item">
+            <div class="clock-label"><span class="dot dot-a"></span> τₐ (Blau)</div>
+            <div class="clock-val font-mono" id="val-tau-a">0.00s</div>
+            <div class="clock-rate font-mono" id="val-rate-a">1.00x</div>
+          </div>
+          <div class="clock-item">
+            <div class="clock-label"><span class="dot dot-b"></span> τ_b (Gelb)</div>
+            <div class="clock-val font-mono" id="val-tau-b">0.00s</div>
+            <div class="clock-rate font-mono" id="val-rate-b">1.00x</div>
+          </div>
+          <div class="clock-item">
+            <div class="clock-label"><span class="dot dot-c"></span> τ_c (Rot)</div>
+            <div class="clock-val font-mono" id="val-tau-c">0.00s</div>
+            <div class="clock-rate font-mono" id="val-rate-c">1.00x</div>
+          </div>
+        </div>
+        <div class="rift-status-desc" id="rift-status-desc">
+          Zeittakt synchron: Kein Phasen-Abriss.
+        </div>
+      </div>
+
+      <!-- Pfad 3: Analytische Auswurf-Formel & Prädiktor (Symbolische KI) -->
+      <div class="formula-card" id="formula-card">
+        <div class="formula-header">
+          <div class="formula-title-group">
+            <span class="formula-icon">⚛️</span>
+            <span class="formula-title">Pfad 3: Analytische Formel</span>
+          </div>
+          <span class="formula-badge" id="formula-badge">R² = 0.83</span>
+        </div>
+
+        <div class="formula-box">
+          <div class="formula-mode-switch">
+            <button class="f-mode-btn active" id="btn-fmode-plain" title="Einfach verständlich in Worten">Klartext-Verständnis</button>
+            <button class="f-mode-btn" id="fmode-math-btn" id="btn-fmode-math" title="Exakte algebraische Formel">Wissenschaft</button>
+          </div>
+
+          <!-- Modus 1: Intuitive Klartext-Formel (Modular & Bildhaft) -->
+          <div class="formula-plain-view" id="formula-plain-view">
+            <div class="plain-frac-box">
+              <div class="plain-num">
+                <span class="pill pill-time" title="Diskrete Oszillationen vor dem Reißpunkt">🔄 (N − 1) Zyklen</span>
+                <span class="plain-op">×</span>
+                <span class="pill pill-shield" title="Charakteristische Orbit-Dauer T_orbit = 0.0051 · T_scale (10M Kalibriert)">⏱️ T_orbit</span>
+                <span class="plain-op">+</span>
+                <span class="pill pill-rift" title="Dynamische Kepler-Flugzeit der Auswurf-Hyperbel: 1.73 · √(14³ / G·M_tot)">🚀 t_Kepler</span>
+              </div>
+              <div class="plain-divider"></div>
+              <div class="plain-den">
+                <span class="pill pill-mass" title="Reine Zyklen-Formel">N = 1 + round(</span>
+                <span class="pill pill-shield" title="Drehimpuls-Schutzfaktor 1 + η^0.19 (10M Kalibriert)">🛡️ Kreisel</span>
+                <span class="plain-op">/</span>
+                <span class="pill pill-rift" title="Relative Zeit-Schere: Gravitatives Eigenzeit-Gefälle (ΔΦ + 0.05)">⏳ (ΔΦ + 0.05)</span>
+                <span class="plain-op">×</span>
+                <span class="pill pill-gate" title="Doppler-Phasentor: Sturzflug vs. Resonanz-Auswärtsflug (k=12)">📡 Doppler-Tor</span>
+                <span class="pill pill-mass">)</span>
+              </div>
+            </div>
+            <div class="plain-numbers-row" id="plain-numbers-row">
+              <span class="font-mono text-cyan" style="font-weight: 700;">28.8 s</span> = (<span class="font-mono text-green">8 Zyklen</span> − 1) × <span class="font-mono">3.3 s</span> + <span class="font-mono text-gold">5.5 s</span>
+            </div>
+          </div>
+
+          <!-- Modus 2: Exakte wissenschaftliche Formel -->
+          <div class="formula-math-view" id="formula-math-view" style="display: none;">
+            <div class="formula-math">
+              <span class="f-var">T</span><sub>auswurf</sub> = (<span class="f-var">N</span> − 1) · <span class="f-var">T</span><sub>orbit</sub> + <span class="f-var">t</span><sub>Kepler</sub>
+              <br>
+              <span style="font-size: 0.70rem; color: #a0a0c0; display: inline-block; margin-top: 4px;">
+                mit <span class="f-var">N</span> = 1 + round[ (<span class="f-frac"><span class="f-num">1.002 · (1 + η<sup>0.19</sup>)</span><span class="f-den">ΔΦ<sub>rel</sub> + 0.05</span></span> − 1) · Gate(cos α) ]
+              </span>
+            </div>
+            <div class="formula-subnote">
+              Doppler Gate(cos α) = ½·(1 + tanh(12·cos α)) & T<sub>orbit</sub> = 0.0051·T<sub>scale</sub>
+            </div>
+          </div>
+        </div>
+
+        <div class="pred-grid">
+          <div class="pred-cell">
+            <span class="pred-label" id="pred-stage-label">Auswurf-Kandidat:</span>
+            <div class="pred-value-row">
+              <span class="pred-target" id="pred-target">Stern C (Rot)</span>
+              <span class="pred-conf" id="pred-conf">89%</span>
+            </div>
+          </div>
+          <div class="pred-cell">
+            <span class="pred-label">Snapshot-Vorhersage:</span>
+            <div class="pred-value-row">
+              <span class="pred-time font-mono" id="pred-time">~28.8 s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Physikalische Phasen-Auflösung -->
+        <div class="slingshot-info-row">
+          <span class="slingshot-label">Rotations-Schutz: <strong id="val-rot-bonus" style="color: #ffb703;">+18%</strong></span>
+          <span class="slingshot-label">Doppler-Tor: <strong id="val-doppler-gate" style="color: #00ff88;">Resonanz (+0.30)</strong></span>
+        </div>
+
+        <div class="slingshot-info-row" style="margin-top: -4px;">
+          <span class="slingshot-label">Resonanz-Zyklus: <strong id="val-cycles-count" style="color: #00ff88;">0 / ~8</strong></span>
+          <span class="slingshot-label">Zeit-Schere: <strong id="val-phase-integral" style="color: #ff007f;">Σ = 0.0</strong></span>
+        </div>
+
+        <div class="pred-tracker">
+          <div class="tracker-header">
+            <span id="tracker-status">Zeit bis Bruch:</span>
+            <span class="font-mono" id="tracker-pct">0%</span>
+          </div>
+          <div class="tracker-bar-bg">
+            <div class="tracker-bar-fill" id="tracker-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- Physik-Erklärung: Zeit-Schere & Doppler-Tor -->
+        <details class="theory-details">
+          <summary>💡 Wie funktionieren Zeit-Schere & Doppler-Tor?</summary>
+          <div class="theory-content">
+            <p><strong>⏳ Gravitative Zeit-Schere (ΔΦ):</strong> Wenn zwei Sterne ein enges Paar bilden, stürzen sie tief in einen Gravitations-Trichter. Ihre Eigenzeit verlangsamt sich relativ zum äußeren Begleiter. Je steiler dieses Gefälle ist (die "Schere"), desto stärker schirmt sich der Doppelstern ab und hält das System stabil (z.B. Alpha Centauri).</p>
+            <p><strong>📡 Das Doppler-Tor (cos α):</strong> Misst den Einflug-Winkel des dritten Sterns zum Drehsinn des inneren Paares:</p>
+            <p>• <em>Retrograd (cos α → -1.0):</em> <strong>Tor weit offen!</strong> Frontaler Gegenverkehr überträgt maximalen Impuls. Der Stern wird fast sofort herauskatapultiert (z.B. Orion-Slingshot AE Aurigae).</p>
+            <p>• <em>Prograd (cos α → +1.0):</em> <strong>Tor verriegelt!</strong> Minimaler Relativstoß; der Stern wird in eine kreisförmige Resonanz gefangen.</p>
+          </div>
+        </details>
+      </div>
+
+      <!-- Conservation Laws -->
+      <div class="panel-section-title" style="margin-top: 14px;">
+        <span class="icon">⚖️</span>
+        <h3>Erhaltungsgrößen</h3>
+      </div>
+      <div class="conservation-box">
+        <div class="cons-row">
+          <span>Gesamtenergie E:</span>
+          <span class="font-mono" id="val-energy-tot">0.000</span>
+        </div>
+        <div class="cons-row sub">
+          <span>Kinetisch T / Potentiell V:</span>
+          <span class="font-mono" id="val-energy-split">0.0 / 0.0</span>
+        </div>
+        <div class="cons-row">
+          <span>Energie-Drift ΔE:</span>
+          <span class="font-mono color-green" id="val-energy-drift">0.000%</span>
+        </div>
+        <div class="cons-row">
+          <span>Drehimpuls |L|:</span>
+          <span class="font-mono" id="val-momentum">0.000</span>
+        </div>
+      </div>
+
+      <!-- Chart Header with Time vs Phase-Space Toggle -->
+      <div class="chart-header-row">
+        <div class="panel-section-title" style="margin-bottom: 0;">
+          <span class="icon">📈</span>
+          <h3 id="chart-title">Ω-Oszilloskop</h3>
+        </div>
+        <div class="chart-toggle-group">
+          <button class="chart-tab-btn active" id="tab-chart-time" title="Zeitverlauf (Wellen)">t-Welle</button>
+          <button class="chart-tab-btn" id="tab-chart-phase" title="Phasenraum (Ω vs dΩ/dt)">Phasenraum</button>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="oscilloscope-canvas" width="280" height="110"></canvas>
+      </div>
+      <div class="chart-legend" id="chart-legend">
+        <span class="legend-item" style="color: #ff9e00;">— Ω Spannung</span>
+        <span class="legend-item" style="color: #00f0ff;">— a₁</span>
+        <span class="legend-item" style="color: #ff007f;">— a₂</span>
+        <span class="legend-item" style="color: #00ff88;">— a₃</span>
+      </div>
+    </aside>
+
+    <!-- Right Dashboard: Controls & Lab Presets -->
+    <aside id="controls-panel" class="glass-panel side-panel">
+      <div class="panel-section-title">
+        <span class="icon">🧪</span>
+        <h2>Forschungs-Szenarien</h2>
+      </div>
+
+      <!-- Presets List -->
+      <div class="preset-buttons">
+        <button class="preset-btn active" id="btn-preset-figure8" data-preset="figure8">
+          <span class="preset-icon">♾️</span>
+          <div class="preset-info">
+            <span class="preset-name">Figure-8 Choreographie</span>
+            <span class="preset-desc">Chenciner & Montgomery (2000) – Stabile periodische Lösung</span>
+          </div>
+        </button>
+
+        <button class="preset-btn" id="btn-preset-lagrange" data-preset="lagrange">
+          <span class="preset-icon">📐</span>
+          <div class="preset-info">
+            <span class="preset-name">Lagrange Gleichseitig (L4/L5)</span>
+            <span class="preset-desc">Rotierendes starres Dreieck – Geometrische Symmetrie</span>
+          </div>
+        </button>
+
+        <button class="preset-btn" id="btn-preset-trisolaris" data-preset="trisolaris">
+          <span class="preset-icon">☀️</span>
+          <div class="preset-info">
+            <span class="preset-name">Trisolaris Chaos</span>
+            <span class="preset-desc">Authentischer chaotischer Tanz & Beinahe-Kollisionen</span>
+          </div>
+        </button>
+
+        <button class="preset-btn" id="btn-preset-pythagoras" data-preset="pythagoras">
+          <span class="preset-icon">🔺</span>
+          <div class="preset-info">
+            <span class="preset-name">Pythagoras Problem (Burrau)</span>
+            <span class="preset-desc">Massen 3:4:5 im Ruhezustand – Extremer Stresstest</span>
+          </div>
+        </button>
+
+        <button class="preset-btn" id="btn-preset-euler" data-preset="euler">
+          <span class="preset-icon">↔️</span>
+          <div class="preset-info">
+            <span class="preset-name">Euler Kollinear</span>
+            <span class="preset-desc">Instabile Anordnung auf einer Linie</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Perspective Toggle: Lab vs Shape Space -->
+      <div class="panel-section-title" style="margin-top: 16px;">
+        <span class="icon">👁️</span>
+        <h3>Blickwinkel-Transformation</h3>
+      </div>
+      <div class="view-mode-toggle">
+        <button class="toggle-btn active" id="btn-view-lab">
+          <span>Klassischer Raum</span>
+          <small>Trajektorien & Orbits</small>
+        </button>
+        <button class="toggle-btn" id="btn-view-shape">
+          <span>Trinitäts-Formraum</span>
+          <small>Mit Dreieck mitrotierend</small>
+        </button>
+      </div>
+      <p class="view-help-text" id="view-help-text">
+        Klassische Ansicht: Du siehst die drei Körper im Koordinatensystem des Raums fliegen.
+      </p>
+
+      <!-- Simulation Playback Controls -->
+      <div class="panel-section-title" style="margin-top: 14px;">
+        <span class="icon">⏱️</span>
+        <h3>Simulations-Steuerung</h3>
+      </div>
+      <div class="playback-controls">
+        <button class="control-btn primary" id="btn-play-pause">
+          <span id="play-icon">⏸️</span> Pause
+        </button>
+        <button class="control-btn" id="btn-step-forward" title="Einzelschritt vorwärts">
+          ⏭️ Schritt
+        </button>
+        <button class="control-btn danger" id="btn-reset" title="Aktuelles Szenario neustarten">
+          🔄 Reset
+        </button>
+      </div>
+
+      <!-- Speed & Precision Sliders -->
+      <div class="slider-group">
+        <div class="slider-header">
+          <label for="slider-speed">Geschwindigkeit:</label>
+          <span class="font-mono" id="label-speed">1.0x</span>
+        </div>
+        <input type="range" id="slider-speed" min="0.1" max="4.0" step="0.1" value="1.0">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <label for="slider-softening">Gravitations-Softening (ε):</label>
+          <span class="font-mono" id="label-softening">0.05</span>
+        </div>
+        <input type="range" id="slider-softening" min="0.001" max="0.3" step="0.005" value="0.05">
+      </div>
+
+      <!-- Visual Overlays Toggles -->
+      <div class="toggle-row">
+        <label class="switch-label">
+          <input type="checkbox" id="chk-trails" checked>
+          <span class="switch-custom"></span>
+          <span>Orbitalspuren (Trails)</span>
+        </label>
+        <label class="switch-label">
+          <input type="checkbox" id="chk-triangle-mesh" checked>
+          <span class="switch-custom"></span>
+          <span>Spannungs-Gewebe (GS)</span>
+        </label>
+        <label class="switch-label">
+          <input type="checkbox" id="chk-vectors" checked>
+          <span class="switch-custom"></span>
+          <span>Kanten & Abstände</span>
+        </label>
+      </div>
+
+      <!-- Masses Customizer Accordion -->
+      <details class="masses-accordion" id="masses-accordion">
+        <summary>Massen konfigurieren (mₐ, m_b, m_c)</summary>
+        <div class="masses-body">
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="dot dot-a"></span>
+              <label for="slider-mass-a">Masse Kₐ (Cyan):</label>
+              <span class="font-mono" id="label-mass-a">1.0</span>
+            </div>
+            <input type="range" id="slider-mass-a" min="0.1" max="10.0" step="0.1" value="1.0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="dot dot-b"></span>
+              <label for="slider-mass-b">Masse K_b (Gold):</label>
+              <span class="font-mono" id="label-mass-b">1.0</span>
+            </div>
+            <input type="range" id="slider-mass-b" min="0.1" max="10.0" step="0.1" value="1.0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="dot dot-c"></span>
+              <label for="slider-mass-c">Masse K_c (Magenta):</label>
+              <span class="font-mono" id="label-mass-c">1.0</span>
+            </div>
+            <input type="range" id="slider-mass-c" min="0.1" max="10.0" step="0.1" value="1.0">
+          </div>
+        </div>
+      </details>
+    </aside>
+
+    <!-- Bottom Hypothesis Banner / Insight Bar -->
+    <footer id="hypothesis-banner" class="glass-panel">
+      <div class="banner-badge">HYPOTHESE</div>
+      <div class="banner-text" id="hypothesis-text">
+        <strong>Trinitäts-Prämisse:</strong> Die Gravitationskraft wird hier nicht als isolierte Punkt-Vektoren verstanden, sondern als elastisches Spannungsfeld <strong>Ω</strong> im Deformationsraum des Dreiecks <strong>GS</strong>.
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
