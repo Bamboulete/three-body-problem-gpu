@@ -4,9 +4,9 @@
  * 3D-Renderer, Mission-Control-HUD und das Live-Monte-Carlo-Labor.
  */
 
-import { PhysicsEngine } from './physics.js?v=6';
-import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=6';
-import { SceneRenderer } from './renderer.js?v=6';
+import { PhysicsEngine } from './physics.js?v=7';
+import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=7';
+import { SceneRenderer } from './renderer.js?v=7';
 
 class TrinityApp {
   constructor() {
@@ -251,6 +251,10 @@ class TrinityApp {
     this.sliderSpeed.addEventListener('input', (e) => {
       this.speedMultiplier = parseFloat(e.target.value);
       this.labelSpeed.textContent = `${this.speedMultiplier.toFixed(1)}x`;
+      // Puffer sofort entleeren, damit der Tempowechsel unmittelbar und verzögerungsfrei wirksam ist
+      if (this.physics) {
+        this.physics.accumulator = 0;
+      }
     });
 
     // Softening Slider

@@ -260,13 +260,20 @@ export class PhysicsEngine {
   update(frameDelta, speedMultiplier = 1.0) {
     if (this.bodies.length < 3) return;
 
-    // Begrenze frameDelta gegen extreme Lags / Hintergrund-Tabs (max 0.1s)
-    const clampedDelta = Math.min(frameDelta, 0.1);
+    // Begrenze frameDelta gegen extreme Lags / Hintergrund-Tabs (max 0.05s)
+    const clampedDelta = Math.min(frameDelta, 0.05);
     this.accumulator += clampedDelta * speedMultiplier;
+
+    // Anti-Spiral-of-Death & Vermeidung von Eingabe-Latenzen:
+    // Der Akkumulator darf maximal den Bedarf von ca. 1.5 Frames puffern
+    const maxAccumulator = Math.max(this.fixedSubDt * 4, clampedDelta * speedMultiplier * 1.5);
+    if (this.accumulator > maxAccumulator) {
+      this.accumulator = maxAccumulator;
+    }
 
     // Feste, deterministische Integrationsschrittweite (vollkommen entkoppelt von Monitor-FPS)
     const fixedSubDt = this.fixedSubDt;
-    const maxStepsPerFrame = 120; // Sicherheitsgrenze
+    const maxStepsPerFrame = 250; // Ausreichend Headroom für 4.0x Speed ohne Pufferstau
     let steps = 0;
 
     while (this.accumulator >= fixedSubDt && steps < maxStepsPerFrame) {
