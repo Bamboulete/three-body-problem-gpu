@@ -338,9 +338,13 @@ def run_billion_atoms_experiment():
     print(f"  Elektron 1 ausgeworfen   : {total_e1_ejected:,} ({total_e1_ejected/total_ionized*100:.2f} %)")
     print("-" * 95)
 
-    # 5. Phasenraum-Matrix auf CPU holen und Bild rendern
+    # 5. Phasenraum-Matrix auf CPU holen und speichern
     grid_cpu = cp.asnumpy(phase_space_grid_gpu)
     t_hist_cpu = cp.asnumpy(t_hist_gpu)
+
+    os.makedirs("scratch", exist_ok=True)
+    np.save("scratch/phase_space_density_1b_atoms.npy", grid_cpu)
+    print("  • 2D-Phasenraumkarte (Atome): scratch/phase_space_density_1b_atoms.npy (500x500 Grid gespeichert)")
 
     # 6. Fit der Zerfallskonstante λ
     t_bin_centers = np.linspace(10.0 + (t_max - 10.0)/(2*NUM_TBINS), t_max - (t_max - 10.0)/(2*NUM_TBINS), NUM_TBINS)
@@ -361,31 +365,13 @@ def run_billion_atoms_experiment():
     print(f"  Relative Übereinstimmung Kosmos vs Atom: {100.0 - abs(lambda_1b_orb - 0.0567)/0.0567*100.0:.2f} %!")
     print("=" * 95)
 
-    # 7. Render 500x500 Heatmap
+    # 7. Render 500x500 Heatmap mit vollständiger Legende und Regime-Annotationen
     heatmap_path = os.path.join("assets", "phase_space_density_1b_atoms.png")
-    os.makedirs("assets", exist_ok=True)
-    
-    plt.figure(figsize=(10, 8), dpi=300)
-    plt.style.use('dark_background')
-    
-    # Log-Skala für Density
-    log_grid = np.log10(grid_cpu + 1.0)
-    plt.imshow(
-        log_grid,
-        origin='lower',
-        extent=[0.0, 0.8, -1.0, 1.0],
-        aspect='auto',
-        cmap='plasma'
-    )
-    plt.colorbar(label='Log10(Ereignisse pro Phasenraum-Zelle)')
-    plt.xlabel('Coulomb Zeit-Schere ΔΦ_Coulomb = |r2 - r1| / (r2 + r1)')
-    plt.ylabel('Doppler-Tor cos(α) = cos(∠(v1, v2))')
-    plt.title('1.000.000.000 Helium-Atome: Phasenraum-Dichte (Coulomb 3-Körper-Zerfall)')
-    
-    plt.tight_layout()
-    plt.savefig(heatmap_path)
-    plt.close()
-    print(f"\nPhasenraum-Dichtekarte (500x500) erfolgreich gerendert:\n{heatmap_path}\n")
+    try:
+        from benchmarks.plot_atomic_phase_space import plot_atomic_phase_space
+    except ModuleNotFoundError:
+        from plot_atomic_phase_space import plot_atomic_phase_space
+    plot_atomic_phase_space(grid=grid_cpu, out_path=heatmap_path)
 
     # Ergebnisse speichern
     res_path = os.path.join("benchmarks", "billion_atoms_results.json")
