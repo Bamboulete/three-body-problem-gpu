@@ -8,7 +8,8 @@
 
 An ultra-high-throughput computational astrophysics laboratory and interactive 3D platform investigating chaotic three-body decays, orbital phase-space topologies, and early-orbit predictability.
 
-👉 **[Launch Interactive 3D Web Simulation Live](https://bamboulete.github.io/three-body-problem-gpu/)**
+👉 **[Launch Interactive 3D Web Simulation Live](https://bamboulete.github.io/three-body-problem-gpu/)**  
+📄 **[Read Scientific Research Paper (PDF)](paper/trinity_topology.pdf)** | **[HTML Version](paper/trinity_topology.html)** | **[Markdown Source](paper/trinity_topology.md)**
 
 Powered by a register-tuned **CUDA C++ Symplectic Leapfrog engine** achieving over **4,200,000 systems per second** on consumer GPU hardware, and accompanied by a real-time 3D browser visualizer.
 
@@ -247,7 +248,11 @@ To test whether the Trinity Topology is an artifact of astrophysics or a fundame
 │   ├── helium_1m_results.json           # 1M Helium simulation dataset
 │   ├── billion_atoms_results.json       # 1B Helium simulation results dataset
 │   ├── wannier_decay_analysis.json      # Universal decay rate comparison dataset
-│   └── plot_phase_space_density.py      # 500x500 stellar heatmap generator
+├── paper/
+│   ├── trinity_topology.pdf             # Pre-rendered 2.28 MB publication-grade paper (A4)
+│   ├── trinity_topology.html            # Print-ready interactive paper with MathJax
+│   ├── trinity_topology.md              # Complete scientific manuscript
+│   └── build_paper_pdf.py               # One-click headless PDF builder
 ├── assets/
 │   ├── phase_space_density_1b.png       # 500x500 stellar phase-space density render
 │   └── phase_space_density_1b_atoms.png # 500x500 atomic phase-space density render
