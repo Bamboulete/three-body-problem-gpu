@@ -4,9 +4,9 @@
  * 3D-Renderer, Mission-Control-HUD und das Live-Monte-Carlo-Labor.
  */
 
-import { PhysicsEngine } from './physics.js?v=2';
-import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=2';
-import { SceneRenderer } from './renderer.js?v=2';
+import { PhysicsEngine } from './physics.js?v=3';
+import { COSMIC_PRESETS, ATOMIC_PRESETS, PRESETS } from './presets.js?v=3';
+import { SceneRenderer } from './renderer.js?v=3';
 
 class TrinityApp {
   constructor() {
@@ -697,11 +697,11 @@ class TrinityApp {
           if (isPhase1) {
             this.hudStatusBadge.textContent = `PHASE 1 (N = ${formulaPred.cycles_count} ≤ 4)`;
             this.hudStatusBadge.className = 'hud-status-badge status-phase1';
-            this.hudStatusSub.textContent = 'Deterministisch &middot; Initialpaarung erhalten (>70%)';
+            this.hudStatusSub.textContent = 'Deterministisch · Initialpaarung erhalten (>70%)';
           } else {
             this.hudStatusBadge.textContent = `PHASE 2 (N = ${formulaPred.cycles_count} ≥ 5)`;
             this.hudStatusBadge.className = 'hud-status-badge status-phase2';
-            this.hudStatusSub.textContent = 'Ergodischer Poisson-Zerfall &middot; Gedächtnis gelöscht';
+            this.hudStatusSub.textContent = 'Ergodischer Poisson-Zerfall · Gedächtnis gelöscht';
           }
         }
 
@@ -711,11 +711,11 @@ class TrinityApp {
         this.hudDopplerNeedle.style.left = `${needlePct}%`;
         this.hudDopplerText.textContent = `${cosA >= 0 ? '+' : ''}${cosA.toFixed(2)}`;
         if (cosA < -0.3) {
-          this.hudDopplerDesc.textContent = 'Tor offen &middot; Frontaler Impulsübertrag';
+          this.hudDopplerDesc.textContent = 'Tor offen · Frontaler Impulsübertrag';
         } else if (cosA > 0.3) {
-          this.hudDopplerDesc.textContent = 'Tor verriegelt &middot; Resonanz-Schutzschild';
+          this.hudDopplerDesc.textContent = 'Tor verriegelt · Resonanz-Schutzschild';
         } else {
-          this.hudDopplerDesc.textContent = 'Kozai-Neutral &middot; Orthogonaler Orbit';
+          this.hudDopplerDesc.textContent = 'Kozai-Neutral · Orthogonaler Orbit';
         }
 
         // Shear Gauge
@@ -733,7 +733,7 @@ class TrinityApp {
         } else {
           this.hudPredTarget.textContent = formulaPred.candidateName;
           this.hudPredConf.textContent = formulaPred.isSlingshotLocked ? '100%' : `${formulaPred.confidencePct}%`;
-          this.hudPredDetail.textContent = `~${formulaPred.t_pred_symbolic.toFixed(1)}s &middot; Zyklen: ~${formulaPred.n_pred}`;
+          this.hudPredDetail.textContent = `~${formulaPred.t_pred_symbolic.toFixed(1)}s · Zyklen: ~${formulaPred.n_pred}`;
         }
       }
     }
@@ -1079,7 +1079,11 @@ class TrinityApp {
       }
 
       this.renderer.update(this.physics, this.frameCount);
-      this.updateTelemetry();
+
+      // DOM-Telemetrie & Oszilloskop auf 15 Hz drosseln für ultra-flüssige 60-144 FPS
+      if (this.frameCount % 4 === 0) {
+        this.updateTelemetry();
+      }
     };
 
     requestAnimationFrame(loop);

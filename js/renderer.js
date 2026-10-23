@@ -58,11 +58,7 @@ float snoise(vec3 v){
 }
 
 float fbm(vec3 p) {
-  float f = 0.0;
-  f += 0.5000 * snoise(p); p *= 2.02;
-  f += 0.2500 * snoise(p); p *= 2.03;
-  f += 0.1250 * snoise(p);
-  return f;
+  return 0.65 * snoise(p) + 0.35 * snoise(p * 2.05);
 }
 `;
 
@@ -149,10 +145,10 @@ void main() {
   float fresnel = 1.0 - abs(dot(norm, viewDir));
   float rim = pow(fresnel, 3.2);
 
-  // Strahlende, organisch pulsierende Koronar-Eruptionen
+  // Strahlende, organisch pulsierende Koronar-Eruptionen (optimierter schneller Shader)
   float t = uTime * uSpeed;
   vec3 rayCoord = normalize(vPosition) * 3.8 + vec3(sin(t * 0.3) * 0.3, t * 0.35, cos(t * 0.2) * 0.3);
-  float rays = fbm(rayCoord) * 0.5 + 0.5;
+  float rays = snoise(rayCoord) * 0.5 + 0.5;
 
   float flare = rim * (0.3 + 0.7 * rays);
   vec3 coronaCol = mix(uColorCorona, uColorCore, pow(fresnel, 2.5));
@@ -176,6 +172,7 @@ export class SceneRenderer {
 
     this.initScene();
     this.initObjects();
+    this.initAtomicObjects();
     this.initStarfield();
 
     window.addEventListener('resize', () => this.onWindowResize());
@@ -191,9 +188,13 @@ export class SceneRenderer {
     this.camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
     this.camera.position.set(0, 4.5, 9);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance'
+    });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     this.renderer.setClearColor(0x07090e, 1);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
@@ -432,66 +433,228 @@ export class SceneRenderer {
     }
   }
 
+  initAtomicObjects() {
+    this.atomicBodyObjects = [];
+
+    // ========================================================================
+    // Körper 0: HELIUM-KERN He²⁺ (Alpha-Teilchen = 2 Protonen + 2 Neutronen)
+    // ========================================================================
+    const nucGroup = new THREE.Group();
+    const nucleonsGroup = new THREE.Group();
+
+    // 2 Protonen (Gold-Rot leuchtend mit positiver Kernladung)
+    const protonMat = new THREE.MeshStandardMaterial({
+      color: 0xff3a00,
+      emissive: 0xff2200,
+      emissiveIntensity: 0.9,
+      roughness: 0.2,
+      metalness: 0.2
+    });
+    // 2 Neutronen (Neutrales Hochenergie-Silber/Eisblau)
+    const neutronMat = new THREE.MeshStandardMaterial({
+      color: 0xa0d8ef,
+      emissive: 0x1b4965,
+      emissiveIntensity: 0.7,
+      roughness: 0.2,
+      metalness: 0.3
+    });
+
+    const nucleonGeo = new THREE.SphereGeometry(0.065, 20, 20);
+    const d = 0.045; // Nukleonen-Abstand im Kern
+
+    const p1 = new THREE.Mesh(nucleonGeo, protonMat);
+    p1.position.set(d, d, d);
+    nucleonsGroup.add(p1);
+
+    const p2 = new THREE.Mesh(nucleonGeo, protonMat);
+    p2.position.set(-d, -d, d);
+    nucleonsGroup.add(p2);
+
+    const n1 = new THREE.Mesh(nucleonGeo, neutronMat);
+    n1.position.set(-d, d, -d);
+    nucleonsGroup.add(n1);
+
+    const n2 = new THREE.Mesh(nucleonGeo, neutronMat);
+    n2.position.set(d, -d, -d);
+    nucleonsGroup.add(n2);
+
+    nucGroup.add(nucleonsGroup);
+
+    // Starke Kernkraft-Hülle (Shimmering Strong Force Shell)
+    const nucShellGeo = new THREE.SphereGeometry(0.14, 24, 24);
+    const nucShellMat = new THREE.MeshBasicMaterial({
+      color: 0xffb703,
+      transparent: true,
+      opacity: 0.25,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const nucShell = new THREE.Mesh(nucShellGeo, nucShellMat);
+    nucGroup.add(nucShell);
+
+    const nucLight = new THREE.PointLight(0xffb703, 2.2, 12, 1.2);
+    nucGroup.add(nucLight);
+
+    nucGroup.visible = false;
+    this.scene.add(nucGroup);
+
+    this.atomicBodyObjects.push({
+      group: nucGroup,
+      nucleonsGroup,
+      shell: nucShell,
+      light: nucLight,
+      type: 'nucleus'
+    });
+
+    // ========================================================================
+    // Körper 1: ELEKTRON e₁ (Subatomarer Quanten-Lichtpunkt + de-Broglie-Wellen)
+    // ========================================================================
+    const e1Group = new THREE.Group();
+    const e1CoreGeo = new THREE.SphereGeometry(0.035, 16, 16);
+    const e1CoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const e1Core = new THREE.Mesh(e1CoreGeo, e1CoreMat);
+    e1Group.add(e1Core);
+
+    // de-Broglie Wellenringe (Cyan)
+    const ringGeo1 = new THREE.RingGeometry(0.065, 0.082, 32);
+    const ringMat1 = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const e1Ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+    e1Ring1.rotation.x = Math.PI * 0.4;
+    e1Group.add(e1Ring1);
+
+    const ringGeo2 = new THREE.RingGeometry(0.095, 0.112, 32);
+    const ringMat2 = new THREE.MeshBasicMaterial({
+      color: 0x00b4d8,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const e1Ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+    e1Ring2.rotation.y = Math.PI * 0.45;
+    e1Group.add(e1Ring2);
+
+    const e1HaloGeo = new THREE.SphereGeometry(0.09, 16, 16);
+    const e1HaloMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const e1Halo = new THREE.Mesh(e1HaloGeo, e1HaloMat);
+    e1Group.add(e1Halo);
+
+    const e1Light = new THREE.PointLight(0x00f0ff, 1.8, 10, 1.2);
+    e1Group.add(e1Light);
+
+    e1Group.visible = false;
+    this.scene.add(e1Group);
+
+    this.atomicBodyObjects.push({
+      group: e1Group,
+      core: e1Core,
+      ring1: e1Ring1,
+      ring2: e1Ring2,
+      light: e1Light,
+      type: 'electron'
+    });
+
+    // ========================================================================
+    // Körper 2: ELEKTRON e₂ (Subatomarer Quanten-Lichtpunkt + de-Broglie-Wellen)
+    // ========================================================================
+    const e2Group = new THREE.Group();
+    const e2CoreGeo = new THREE.SphereGeometry(0.035, 16, 16);
+    const e2CoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const e2Core = new THREE.Mesh(e2CoreGeo, e2CoreMat);
+    e2Group.add(e2Core);
+
+    // de-Broglie Wellenringe (Magenta)
+    const ringGeo3 = new THREE.RingGeometry(0.065, 0.082, 32);
+    const ringMat3 = new THREE.MeshBasicMaterial({
+      color: 0xff007f,
+      transparent: true,
+      opacity: 0.65,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const e2Ring1 = new THREE.Mesh(ringGeo3, ringMat3);
+    e2Ring1.rotation.x = Math.PI * 0.35;
+    e2Group.add(e2Ring1);
+
+    const ringGeo4 = new THREE.RingGeometry(0.095, 0.112, 32);
+    const ringMat4 = new THREE.MeshBasicMaterial({
+      color: 0x9d4edd,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    const e2Ring2 = new THREE.Mesh(ringGeo4, ringMat4);
+    e2Ring2.rotation.y = Math.PI * 0.35;
+    e2Group.add(e2Ring2);
+
+    const e2HaloGeo = new THREE.SphereGeometry(0.09, 16, 16);
+    const e2HaloMat = new THREE.MeshBasicMaterial({
+      color: 0xff007f,
+      transparent: true,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const e2Halo = new THREE.Mesh(e2HaloGeo, e2HaloMat);
+    e2Group.add(e2Halo);
+
+    const e2Light = new THREE.PointLight(0xff007f, 1.8, 10, 1.2);
+    e2Group.add(e2Light);
+
+    e2Group.visible = false;
+    this.scene.add(e2Group);
+
+    this.atomicBodyObjects.push({
+      group: e2Group,
+      core: e2Core,
+      ring1: e2Ring1,
+      ring2: e2Ring2,
+      light: e2Light,
+      type: 'electron'
+    });
+  }
+
   // Modus umschalten (Kosmos vs. Quanten-Helium-Atom)
   setMode(mode) {
     this.mode = mode;
-    this.updateBodyVisualsForMode();
-  }
+    const isAtomic = (mode === 'atomic');
 
-  updateBodyVisualsForMode() {
-    if (!this.bodyObjects || this.bodyObjects.length < 3) return;
+    // Kosmische Sonnen umschalten
+    for (let i = 0; i < this.bodyObjects.length; i++) {
+      this.bodyObjects[i].group.visible = !isAtomic;
+    }
 
-    if (this.mode === 'atomic') {
-      // ⚛️ QUANTEN-HELIUM-ATOM:
-      // Body 0: Helium-Kern He²⁺ (Alpha-Teilchen, Gold/Rot leuchtend, kompakt, hochenergetisch)
-      // Body 1 & 2: Elektronen e₁ & e₂ (subatomare Quantenpunkte, Cyan & Magenta, KEINE Sonnen-Protuberanzen!)
-      const nuc = this.bodyObjects[0];
-      nuc.flareRing.visible = false;
-      nuc.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
-      nuc.surfaceMat.uniforms.uColorMid.value.setHex(0xffaa00);
-      nuc.surfaceMat.uniforms.uColorEdge.value.setHex(0xd00000);
-      nuc.surfaceMat.uniforms.uSpeed.value = 4.0;
-      nuc.coronaMat.uniforms.uColorCorona.value.setHex(0xff8800);
-      nuc.light.color.setHex(0xffaa00);
-      nuc.light.intensity = 2.4;
+    // Atomkern & Elektronen umschalten
+    for (let i = 0; i < this.atomicBodyObjects.length; i++) {
+      this.atomicBodyObjects[i].group.visible = isAtomic;
+    }
 
-      const e1 = this.bodyObjects[1];
-      e1.flareRing.visible = false;
-      e1.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
-      e1.surfaceMat.uniforms.uColorMid.value.setHex(0x00f0ff);
-      e1.surfaceMat.uniforms.uColorEdge.value.setHex(0x0044bb);
-      e1.surfaceMat.uniforms.uSpeed.value = 5.0;
-      e1.coronaMat.uniforms.uColorCorona.value.setHex(0x00d4ff);
-      e1.light.color.setHex(0x00f0ff);
-      e1.light.intensity = 1.6;
-
-      const e2 = this.bodyObjects[2];
-      e2.flareRing.visible = false;
-      e2.surfaceMat.uniforms.uColorCore.value.setHex(0xffffff);
-      e2.surfaceMat.uniforms.uColorMid.value.setHex(0xff007f);
-      e2.surfaceMat.uniforms.uColorEdge.value.setHex(0x880044);
-      e2.surfaceMat.uniforms.uSpeed.value = 5.0;
-      e2.coronaMat.uniforms.uColorCorona.value.setHex(0xff00aa);
-      e2.light.color.setHex(0xff007f);
-      e2.light.intensity = 1.6;
-
-      // Feines Quanten-Gewebe
-      this.triangleMaterial.opacity = 0.14;
-      this.edgeMaterial.opacity = 0.45;
+    if (isAtomic) {
+      if (this.trailLines && this.trailLines.length >= 3) {
+        this.trailLines[0].line.material.color.setHex(0xffb703); // Alpha-Kern Spur
+        this.trailLines[1].line.material.color.setHex(0x00f0ff); // e1 Cyan Spur
+        this.trailLines[2].line.material.color.setHex(0xff007f); // e2 Magenta Spur
+      }
+      this.triangleMaterial.opacity = 0.16;
+      this.edgeMaterial.opacity = 0.55;
     } else {
-      // 🌌 KOSMOS-MODUS:
-      // Vollwertige Sterne mit solarer Konvektion und Protuberanzen-Ringen
-      for (let i = 0; i < 3; i++) {
-        const obj = this.bodyObjects[i];
-        const cfg = obj.cfg;
-        obj.flareRing.visible = true;
-        obj.surfaceMat.uniforms.uColorCore.value.setHex(cfg.coreColor);
-        obj.surfaceMat.uniforms.uColorMid.value.setHex(cfg.midColor);
-        obj.surfaceMat.uniforms.uColorEdge.value.setHex(cfg.edgeColor);
-        obj.surfaceMat.uniforms.uSpeed.value = cfg.speed;
-        obj.coronaMat.uniforms.uColorCorona.value.setHex(cfg.coronaColor);
-        obj.light.color.setHex(cfg.lightColor);
-        obj.light.intensity = 2.8;
+      if (this.trailLines && this.trailLines.length >= 3) {
+        this.trailLines[0].line.material.color.setHex(0x00e5ff);
+        this.trailLines[1].line.material.color.setHex(0xffaa00);
+        this.trailLines[2].line.material.color.setHex(0xff1e56);
       }
       this.triangleMaterial.opacity = 0.22;
       this.edgeMaterial.opacity = 0.75;
@@ -507,52 +670,51 @@ export class SceneRenderer {
     const pB = bB.pos;
     const pC = bC.pos;
 
-    // 1. Positionen der Körper aktualisieren & Radien an Massen anpassen
     const stars = [pA, pB, pC];
     const timeSec = performance.now() * 0.001;
 
-    for (let i = 0; i < 3; i++) {
-      const body = physics.bodies[i];
-      const obj = this.bodyObjects[i];
-      obj.group.position.set(stars[i].x, stars[i].y, stars[i].z);
+    if (this.mode === 'atomic') {
+      // ⚛️ QUANTEN-HELIUM UPDATE:
+      for (let i = 0; i < 3; i++) {
+        const obj = this.atomicBodyObjects[i];
+        obj.group.position.set(stars[i].x, stars[i].y, stars[i].z);
+      }
 
-      // Modus-spezifische Skalierung (Atomkern vs. Elektronen vs. Sterne)
-      if (this.mode === 'atomic') {
-        if (i === 0) {
-          // Helium-Kern He²⁺: Dichter Alphakern (Masse ~ 4.0)
-          obj.core.scale.setScalar(0.20);
-          obj.corona.scale.setScalar(0.40);
-          obj.flareRing.visible = false;
-        } else {
-          // Elektronen e₁ und e₂: Winzige Quanten-Sphären (Masse 1.0)
-          obj.core.scale.setScalar(0.09);
-          obj.corona.scale.setScalar(0.20);
-          obj.flareRing.visible = false;
-        }
-      } else {
-        // Kosmos: Sterne skalieren mit Kubikwurzel der Masse
+      // Helium-Kern He²⁺: Taumelnde 4-Nukleonen-Rotation & pulsierende Hülle
+      const nuc = this.atomicBodyObjects[0];
+      nuc.nucleonsGroup.rotation.x += 0.016;
+      nuc.nucleonsGroup.rotation.y += 0.022;
+      nuc.shell.scale.setScalar(1.0 + Math.sin(timeSec * 3.5) * 0.06);
+
+      // Elektronen de-Broglie Wellenringe rotieren
+      const e1 = this.atomicBodyObjects[1];
+      e1.ring1.rotation.z += 0.04;
+      e1.ring2.rotation.x += 0.03;
+
+      const e2 = this.atomicBodyObjects[2];
+      e2.ring1.rotation.z -= 0.04;
+      e2.ring2.rotation.y += 0.03;
+    } else {
+      // 🌌 KOSMISCHE STERNE UPDATE:
+      for (let i = 0; i < 3; i++) {
+        const body = physics.bodies[i];
+        const obj = this.bodyObjects[i];
+        obj.group.position.set(stars[i].x, stars[i].y, stars[i].z);
+
         const scale = Math.cbrt(body.mass);
         obj.core.scale.setScalar(obj.cfg.baseRadius * scale);
         obj.corona.scale.setScalar(obj.cfg.coronaRadius * scale);
         obj.flareRing.scale.setScalar(scale);
-        obj.flareRing.visible = true;
-      }
 
-      // Shader Zeit updaten für fließendes Plasma / Quantenwellen
-      if (obj.surfaceMat && obj.surfaceMat.uniforms.uTime) {
-        obj.surfaceMat.uniforms.uTime.value = timeSec;
-      }
-      if (obj.coronaMat && obj.coronaMat.uniforms.uTime) {
-        obj.coronaMat.uniforms.uTime.value = timeSec;
-      }
-
-      // Protuberanzen-Drehung (nur Kosmos)
-      if (this.mode !== 'atomic') {
+        if (obj.surfaceMat && obj.surfaceMat.uniforms.uTime) {
+          obj.surfaceMat.uniforms.uTime.value = timeSec;
+        }
+        if (obj.coronaMat && obj.coronaMat.uniforms.uTime) {
+          obj.coronaMat.uniforms.uTime.value = timeSec;
+        }
         obj.flareRing.rotation.z += 0.007 * (i === 1 ? -1 : 1);
+        obj.light.intensity = 2.6 + Math.sin(timeSec * 2.2 + i * 1.5) * 0.35;
       }
-
-      // Leichtes Pulsieren
-      obj.light.intensity = (this.mode === 'atomic' ? 1.8 : 2.6) + Math.sin(timeSec * 2.2 + i * 1.5) * 0.35;
     }
 
     // 2. Trinitäts-Dreieck (GS) Spannungs-Gewebe Geometrie updaten
